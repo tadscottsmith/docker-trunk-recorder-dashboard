@@ -140,8 +140,56 @@ try {
     talkgroupFile = 'talkgroups.csv';
 }
 
-// Save talkgroups periodically (every hour)
-setInterval(saveTalkgroups, 60 * 60 * 1000);
+// Save talkgroups periodically (every 5 minutes)
+setInterval(saveTalkgroups, 5 * 60 * 1000);
+
+// Watch for changes to talkgroups.csv
+fs.watch(talkgroupFile, async (eventType, filename) => {
+    if (eventType === 'change') {
+        console.log('Detected change in talkgroups.csv, reloading...');
+        try {
+            const csvContent = fs.readFileSync(talkgroupFile, 'utf-8');
+            const csvLines = csvContent
+                .split('\n')
+                .filter(line => line.trim() && !line.startsWith('#'));
+
+            const headerIndex = csvLines.findIndex(line => {
+                const lowerLine = line.toLowerCase();
+                return lowerLine.includes('decimal') && 
+                       (lowerLine.includes('alphatag') || lowerLine.includes('alpha tag'));
+            });
+
+            if (headerIndex !== -1) {
+                // Clear existing data
+                talkgroupsMap.clear();
+                unknownTalkgroups.clear();
+
+                const dataLines = csvLines.slice(headerIndex + 1);
+                dataLines.forEach(line => {
+                    if (line.trim()) {
+                        const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
+                            return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
+                        });
+                        if (decimal) {
+                            talkgroupsMap.set(decimal, {
+                                hex: hex || '',
+                                alphaTag: alphaTag || `Talkgroup ${decimal}`,
+                                mode: mode || '',
+                                description: description || '',
+                                tag: tag || 'Unknown',
+                                category: category || 'Unknown'
+                            });
+                        }
+                    }
+                });
+                console.log(`Reloaded ${talkgroupsMap.size} talkgroups from file change`);
+                io.emit('talkgroupsReloaded');
+            }
+        } catch (error) {
+            console.error('Error reloading talkgroups from file change:', error);
+        }
+    }
+});
 
 // Endpoint to get talkgroup metadata
 app.get('/api/talkgroups', (req, res) => {
@@ -380,15 +428,17 @@ async function connectToMongo() {
 
     const changeStream = collection.watch();
     
-    changeStream.on('change', (change) => {
+    changeStream.on('change', async (change) => {
         if (change.operationType === 'insert') {
             const event = change.fullDocument;
             messageCount++;
 
-            // Track unknown talkgroups
+            // Track unknown talkgroups and save immediately
             const talkgroupId = event.talkgroupOrSource?.toString();
             if (talkgroupId && !talkgroupsMap.has(talkgroupId)) {
                 unknownTalkgroups.add(talkgroupId);
+                // Save changes immediately when new talkgroup is discovered
+                await saveTalkgroups();
             }
 
             // Add talkgroup metadata to the event
