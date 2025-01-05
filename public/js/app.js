@@ -74,10 +74,7 @@ export class RadioMonitor {
     async initialize() {
         try {
             // Fetch talkgroup metadata
-            const response = await fetch('/api/talkgroups');
-            const data = await response.json();
-            this.talkgroupManager.setMetadata(data);
-            this.uiManager.updateUI();
+            await this.refreshMetadata();
 
             // Set up event listeners after DOM is ready
             this.setupEventListeners();
@@ -115,6 +112,11 @@ export class RadioMonitor {
             this.talkgroupManager.handleEvent(event);
             this.uiManager.updateUI();
         });
+
+        this.socket.on('talkgroupsReloaded', async () => {
+            console.log('Talkgroups reloaded, refreshing metadata...');
+            await this.refreshMetadata();
+        });
     }
 
     updateConnectionStatus() {
@@ -137,6 +139,13 @@ export class RadioMonitor {
         setTimeout(() => {
             this.socket.connect();
         }, this.retryDelay);
+    }
+
+    async refreshMetadata() {
+        const response = await fetch('/api/talkgroups');
+        const data = await response.json();
+        this.talkgroupManager.setMetadata(data.talkgroups);
+        this.uiManager.updateUI();
     }
 
     async loadHistory(duration) {

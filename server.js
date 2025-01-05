@@ -204,6 +204,10 @@ app.post('/api/talkgroups/reload', async (req, res) => {
                 }
             });
             console.log(`Reloaded ${talkgroupsMap.size} talkgroups`);
+            
+            // Notify all clients that talkgroup metadata has been updated
+            io.emit('talkgroupsReloaded');
+            
             res.json({ status: 'success', message: `Reloaded ${talkgroupsMap.size} talkgroups` });
         } else {
             throw new Error('Talkgroup file not found');
