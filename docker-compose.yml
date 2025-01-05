@@ -58,7 +58,24 @@ services:
     depends_on:
       - mongodb
     command: >
-      bash -c "sleep 10 && mongosh --host mongodb:27017 --eval 'rs.initiate()'"
+      bash -c "
+        echo 'Waiting for MongoDB to start...' &&
+        sleep 10 &&
+        mongosh --host mongodb:27017 --eval '
+          config = {
+            _id: \"rs0\",
+            members: [
+              { _id: 0, host: \"mongodb:27017\", priority: 1 }
+            ]
+          };
+          rs.initiate(config);
+          while (!rs.isMaster().ismaster) {
+            print(\"Waiting for replica set initialization...\");
+            sleep(1000);
+          }
+          print(\"Replica set initialized successfully.\");
+        '
+      "
     networks:
       - trunk_network
 
