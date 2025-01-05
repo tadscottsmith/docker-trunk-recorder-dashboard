@@ -73,16 +73,20 @@ export class RadioMonitor {
 
     async initialize() {
         try {
-            // Fetch version
-            const versionResponse = await fetch('/api/version');
+            // Fetch version and config
+            const [versionResponse, configResponse] = await Promise.all([
+                fetch('/api/version'),
+                fetch('/api/config')
+            ]);
             const versionData = await versionResponse.json();
             document.getElementById('version').textContent = `v${versionData.version}`;
 
             // Fetch talkgroup metadata
             await this.refreshMetadata();
 
-            // Set up event listeners after DOM is ready
+            // Set up event listeners and UI after DOM is ready
             this.setupEventListeners();
+            await this.uiManager.setupFilterControls();
             
             // Set up connection handlers
             this.setupConnectionHandlers();

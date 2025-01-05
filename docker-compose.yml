@@ -33,6 +33,7 @@ services:
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
       - TALKGROUP_FILE=/app/talkgroups.csv
+      - COUNTY_FILTERS=${COUNTY_FILTERS:-hamco|Hamilton,warco|Warren,butco|Butler,monco|Montgomery}
     depends_on:
       - mongodb
     networks:
