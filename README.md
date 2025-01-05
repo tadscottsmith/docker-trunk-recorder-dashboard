@@ -61,21 +61,17 @@ The dashboard supports two ways to manage talkgroup metadata:
 2. Start with Radio Reference Data:
    - Download the CSV file from Radio Reference
    - Rename it to talkgroups.csv and place it in the examples/ directory
-   - The system is pre-configured to use /app/talkgroups.csv inside the container
-   - The file is mounted from ./examples/talkgroups.csv, so you can:
+   - The file is automatically mounted into the container via docker-compose.yml
+   - You can:
      * Update the file anytime without rebuilding
-     * Changes are reflected immediately
+     * Changes can be loaded using the reload endpoint
    - The system will:
      * Use Radio Reference data for known talkgroups
      * Auto-add any new talkgroups discovered
      * Preserve all metadata during updates
-   - Restart the containers:
-     ```bash
-     docker compose restart
-     ```
 
 3. Update Talkgroup Information:
-   - Edit talkgroups.csv directly
+   - Edit talkgroups.csv directly in the examples/ directory
    - Use the reload endpoint to apply changes without restart:
      ```bash
      curl -X POST http://localhost:3000/api/talkgroups/reload
@@ -130,7 +126,7 @@ chmod +x /path/to/trunk-recorder/scripts/log_mongo_http.sh
 ├── Dockerfile.ingest      # HTTP ingest service container
 ├── .env.example          # Environment template
 ├── examples/             # Example files
-│   └── talkgroups.csv   # Example talkgroup data format
+│   └── talkgroups.csv   # Talkgroup data file
 ├── remote/               # Files for trunk-recorder machine
 │   ├── log_mongo_http.sh # Logging script
 │   └── .env             # Environment template for remote
@@ -151,9 +147,6 @@ PORT=3000
 
 # HTTP Ingest Service Configuration
 HTTP_MONGO_PORT=3001
-
-# Optional Configuration
-TALKGROUP_FILE=/app/talkgroups.csv  # Path to talkgroup CSV file
 ```
 
 Trunk-recorder machine (remote/.env):
@@ -237,9 +230,10 @@ curl http://dashboard-ip:3001/health
   * Enable DEBUG=true in remote .env for detailed logs
 
 - If talkgroup metadata is missing:
-  * Check if TALKGROUP_FILE path is correct
+  * Verify talkgroups.csv exists in examples/ directory
   * Verify CSV file format matches example
   * Check dashboard logs for CSV parsing errors
+  * Try using the reload endpoint to force a refresh
 
 ## Security Notes
 
