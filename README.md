@@ -75,6 +75,17 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 - Edit talkgroups.csv directly - changes are detected automatically
 - View talkgroup details by clicking on any entry in the list
 - New talkgroups are automatically discovered and added to the list
+- Update via API endpoint (for programmatic updates):
+  ```bash
+  curl -X POST http://localhost:3000/api/talkgroups/1001 \
+    -H "Content-Type: application/json" \
+    -d '{
+      "alphaTag": "DISP-1",
+      "description": "Primary Dispatch",
+      "tag": "Dispatch",
+      "category": "Public Safety"
+    }'
+  ```
 
 ## Trunk Recorder Configuration
 
