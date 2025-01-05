@@ -155,20 +155,28 @@ app.post('/api/talkgroups/reload', async (req, res) => {
 
             console.log(`Reloading talkgroup data from ${talkgroupFile}`);
             const csvContent = fs.readFileSync(talkgroupFile, 'utf-8');
+            console.log('CSV file size:', csvContent.length, 'bytes');
             const csvLines = csvContent
                 .split('\n')
-                .filter(line => line.trim() && !line.startsWith('#'));
+                .filter(line => line.trim() && !line.startsWith('#')); // Skip comments and empty lines
+            
+            console.log('Total lines after filtering:', csvLines.length);
 
             // Find the header line
-            const headerIndex = csvLines.findIndex(line => 
-                line.toLowerCase().includes('decimal') && 
-                line.toLowerCase().includes('alphatag'));
+            const headerIndex = csvLines.findIndex(line => {
+                console.log('Checking line for header:', line);
+                return line.toLowerCase().includes('decimal') && 
+                       line.toLowerCase().includes('alphatag');
+            });
+            
+            console.log('Header index:', headerIndex);
             
             if (headerIndex === -1) {
                 throw new Error('CSV file must have a header with at least "decimal" and "alphaTag" columns');
             }
 
             const dataLines = csvLines.slice(headerIndex + 1);
+            console.log('Data lines to process:', dataLines.length);
             dataLines.forEach(line => {
                 if (line.trim()) {
                     const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => field.replace(/"/g, ''));
