@@ -29,15 +29,15 @@ services:
     volumes:
       - ./examples/talkgroups.csv:/app/talkgroups.csv
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true&readConcernLevel=local
+      - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
       - TALKGROUP_FILE=/app/talkgroups.csv
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - trunk_network
+
   ingest:
     build:
       context: .
@@ -46,13 +46,12 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true&readConcernLevel=local
+      - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
       - HTTP_MONGO_PORT=3001
     depends_on:
-      mongodb:
-        condition: service_healthy
+      - mongodb
     networks:
       - trunk_network
 
@@ -69,27 +68,22 @@ services:
           echo 'Waiting for MongoDB to be ready...'
           sleep 2
         done &&
-        echo 'MongoDB is ready, checking replica set status...' &&
-        if ! mongosh --host mongodb:27017 --eval 'rs.status()' >/dev/null 2>&1; then
-          echo 'Initializing replica set...' &&
-          mongosh --host mongodb:27017 --eval '
-            config = {
-              _id: \"rs0\",
-              members: [
-                { _id: 0, host: \"mongodb:27017\", priority: 1 }
-              ],
-              settings: {
-                chainingAllowed: true,
-                heartbeatTimeoutSecs: 10,
-                electionTimeoutMillis: 10000,
-                catchUpTimeoutMillis: -1
-              }
-            };
-            rs.initiate(config);
-          '
-        else
-          echo 'Replica set already initialized'
-        fi &&
+        echo 'MongoDB is ready, initializing replica set...' &&
+        mongosh --host mongodb:27017 --eval '
+          config = {
+            _id: \"rs0\",
+            members: [
+              { _id: 0, host: \"mongodb:27017\", priority: 1 }
+            ],
+            settings: {
+              chainingAllowed: true,
+              heartbeatTimeoutSecs: 10,
+              electionTimeoutMillis: 10000,
+              catchUpTimeoutMillis: -1
+            }
+          };
+          rs.initiate(config);
+        ' &&
         echo 'Waiting for replica set to be ready...' &&
         until mongosh --host mongodb:27017 --eval 'rs.status().ok && rs.status().members.length > 0 && rs.status().members[0].stateStr === \"PRIMARY\"' >/dev/null 2>&1; do
           echo 'Waiting for replica set to be ready...'
