@@ -43,18 +43,12 @@ The dashboard supports two ways to manage talkgroup metadata:
    - Updates every hour with any new talkgroups discovered
    - Provides a starting point for manual updates
 
-2. Manual Configuration:
-   - Download your system's data from [Radio Reference](https://www.radioreference.com)
-   - Format as CSV with required columns: decimal,alphaTag
-   - Optional columns: hex,mode,description,tag,category
-   - See examples/talkgroups.csv for format example
-
-Example talkgroups.csv:
-```csv
-decimal,hex,alphaTag,mode,description,tag,category
-1001,3E9,DISP-1,D,Primary Dispatch,Dispatch,Public Safety
-1002,3EA,TAC-1,D,Tactical Channel 1,Tactical,Public Safety
-```
+2. Radio Reference Data:
+   - Log in to [Radio Reference](https://www.radioreference.com)
+   - Navigate to your radio system's database page
+   - Download the talkgroup data (CSV format)
+   - The downloaded CSV file is ready to use without modification
+   - Place it in your repository as talkgroups.csv
 
 ### Configuration Options:
 
@@ -65,12 +59,16 @@ decimal,hex,alphaTag,mode,description,tag,category
    - Edit file anytime to add metadata
 
 2. Start with Radio Reference Data:
-   - Place your CSV file in the repository
-   - Add the file path to your .env:
+   - Download the CSV file from Radio Reference
+   - Rename it to talkgroups.csv and place in repository
+   - Add to your .env:
      ```ini
      TALKGROUP_FILE=/app/talkgroups.csv
      ```
-   - New talkgroups will still be auto-added
+   - The system will:
+     * Use Radio Reference data for known talkgroups
+     * Auto-add any new talkgroups discovered
+     * Preserve all metadata during updates
    - Restart the containers:
      ```bash
      docker compose restart
