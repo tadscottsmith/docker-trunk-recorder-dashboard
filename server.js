@@ -494,9 +494,28 @@ async function connectToMongo() {
         messageCount = 0; // Reset counter
     }, 30000);
 
+    // Function to check if MongoDB replica set is ready
+    async function waitForReplicaSet() {
+        while (true) {
+            try {
+                const status = await db.admin().command({ replSetGetStatus: 1 });
+                if (status.ok && status.members && status.members.some(m => m.stateStr === "PRIMARY")) {
+                    console.log('MongoDB replica set is ready');
+                    return;
+                }
+            } catch (error) {
+                console.log('Waiting for replica set to be ready...');
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+
     // Function to create and handle change stream
     async function setupChangeStream() {
         try {
+            // Wait for replica set to be ready before setting up change stream
+            await waitForReplicaSet();
+            console.log('Setting up change stream...');
             const changeStream = collection.watch();
             
             changeStream.on('change', async (change) => {

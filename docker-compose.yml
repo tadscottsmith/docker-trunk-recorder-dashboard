@@ -60,7 +60,11 @@ services:
     command: >
       bash -c "
         echo 'Waiting for MongoDB to start...' &&
-        sleep 10 &&
+        until mongosh --host mongodb:27017 --eval 'db.runCommand(\"ping\").ok' >/dev/null 2>&1; do
+          echo 'Waiting for MongoDB to be ready...'
+          sleep 2
+        done &&
+        echo 'MongoDB is ready, initializing replica set...' &&
         mongosh --host mongodb:27017 --eval '
           config = {
             _id: \"rs0\",
@@ -69,12 +73,13 @@ services:
             ]
           };
           rs.initiate(config);
-          while (!rs.isMaster().ismaster) {
-            print(\"Waiting for replica set initialization...\");
-            sleep(1000);
-          }
-          print(\"Replica set initialized successfully.\");
-        '
+        ' &&
+        echo 'Waiting for replica set to be ready...' &&
+        until mongosh --host mongodb:27017 --eval 'rs.status().ok && rs.status().members.length > 0 && rs.status().members[0].stateStr === \"PRIMARY\"' >/dev/null 2>&1; do
+          echo 'Waiting for replica set to be ready...'
+          sleep 2
+        done &&
+        echo 'Replica set is ready and PRIMARY'
       "
     networks:
       - trunk_network
