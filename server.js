@@ -100,9 +100,11 @@ try {
             .filter(line => line.trim() && !line.startsWith('#')); // Skip comments and empty lines
 
         // Find the header line
-        const headerIndex = csvLines.findIndex(line => 
-            line.toLowerCase().includes('decimal') && 
-            line.toLowerCase().includes('alphatag'));
+        const headerIndex = csvLines.findIndex(line => {
+            const lowerLine = line.toLowerCase();
+            return lowerLine.includes('decimal') && 
+                   (lowerLine.includes('alphatag') || lowerLine.includes('alpha tag'));
+        });
         
         if (headerIndex === -1) {
             console.error('Error: CSV file must have a header with at least "decimal" and "alphaTag" columns');
@@ -165,8 +167,9 @@ app.post('/api/talkgroups/reload', async (req, res) => {
             // Find the header line
             const headerIndex = csvLines.findIndex(line => {
                 console.log('Checking line for header:', line);
-                return line.toLowerCase().includes('decimal') && 
-                       line.toLowerCase().includes('alphatag');
+                const lowerLine = line.toLowerCase();
+                return lowerLine.includes('decimal') && 
+                       (lowerLine.includes('alphatag') || lowerLine.includes('alpha tag'));
             });
             
             console.log('Header index:', headerIndex);
