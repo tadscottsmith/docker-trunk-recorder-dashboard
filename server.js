@@ -145,6 +145,54 @@ app.get('/api/talkgroups', (req, res) => {
     });
 });
 
+// Endpoint to force reload of talkgroups.csv
+app.post('/api/talkgroups/reload', async (req, res) => {
+    try {
+        if (fs.existsSync(talkgroupFile)) {
+            // Clear existing data
+            talkgroupsMap.clear();
+            unknownTalkgroups.clear();
+
+            console.log(`Reloading talkgroup data from ${talkgroupFile}`);
+            const csvContent = fs.readFileSync(talkgroupFile, 'utf-8');
+            const csvLines = csvContent
+                .split('\n')
+                .filter(line => line.trim() && !line.startsWith('#'));
+
+            // Find the header line
+            const headerIndex = csvLines.findIndex(line => 
+                line.toLowerCase().includes('decimal') && 
+                line.toLowerCase().includes('alphatag'));
+            
+            if (headerIndex === -1) {
+                throw new Error('CSV file must have a header with at least "decimal" and "alphaTag" columns');
+            }
+
+            const dataLines = csvLines.slice(headerIndex + 1);
+            dataLines.forEach(line => {
+                if (line.trim()) {
+                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => field.replace(/"/g, ''));
+                    talkgroupsMap.set(decimal, {
+                        hex: hex?.trim() || '',
+                        alphaTag: alphaTag?.trim() || `Talkgroup ${decimal}`,
+                        mode: mode?.trim() || '',
+                        description: description?.trim() || '',
+                        tag: tag?.trim() || 'Unknown',
+                        category: category?.trim() || 'Unknown'
+                    });
+                }
+            });
+            console.log(`Reloaded ${talkgroupsMap.size} talkgroups`);
+            res.json({ status: 'success', message: `Reloaded ${talkgroupsMap.size} talkgroups` });
+        } else {
+            throw new Error('Talkgroup file not found');
+        }
+    } catch (error) {
+        console.error('Error reloading talkgroup file:', error);
+        res.status(500).json({ error: 'Failed to reload talkgroups: ' + error.message });
+    }
+});
+
 // Endpoint to update talkgroup metadata
 app.post('/api/talkgroups/:decimal', express.json(), async (req, res) => {
     const decimal = req.params.decimal;
