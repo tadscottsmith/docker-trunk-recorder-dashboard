@@ -195,10 +195,10 @@ To update to the latest version:
    git pull origin main
    ```
 
-3. Rebuild and restart:
+3. Rebuild and restart all services:
    ```bash
-   docker compose build dashboard
-   docker compose up -d dashboard
+   docker compose build
+   docker compose up -d
    ```
 
 4. Verify the update:
