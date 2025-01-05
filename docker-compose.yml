@@ -4,7 +4,13 @@ services:
   mongodb:
     image: mongo:latest
     restart: unless-stopped
-    command: ["--replSet", "rs0", "--bind_ip_all"]
+    command: [
+      "--replSet", "rs0",
+      "--bind_ip_all",
+      "--setParameter", "enableTestCommands=1",
+      "--setParameter", "defaultRWConcern={readConcernLevel: \"local\"}",
+      "--setParameter", "replicationCoordinator.enableMajorityReadConcern=false"
+    ]
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -70,7 +76,13 @@ services:
             _id: \"rs0\",
             members: [
               { _id: 0, host: \"mongodb:27017\", priority: 1 }
-            ]
+            ],
+            settings: {
+              chainingAllowed: true,
+              heartbeatTimeoutSecs: 10,
+              electionTimeoutMillis: 10000,
+              catchUpTimeoutMillis: -1
+            }
           };
           rs.initiate(config);
         ' &&
