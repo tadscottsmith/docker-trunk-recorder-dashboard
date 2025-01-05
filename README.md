@@ -75,9 +75,11 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 
 ### Talkgroup Updates
 - Edit talkgroups.csv directly - changes are detected automatically
-- Use the web interface to update individual talkgroups
-- New talkgroups are automatically added and saved
-- Changes sync to all connected browsers in real-time
+- Update talkgroups through the web interface:
+  * Click on any talkgroup in the list to open its details
+  * Edit the name, description, tag, or category
+  * Changes save automatically and sync to all connected browsers
+- New talkgroups are automatically discovered and added
 
 ## Trunk Recorder Configuration
 
@@ -85,25 +87,17 @@ The dashboard requires trunk-recorder to send events via the logging script. Thi
 
 ### Local Setup (Dashboard and Trunk Recorder on same machine)
 
-1. Copy the logging script:
+1. Copy the logging script to your trunk-recorder directory:
    ```bash
-   # Create scripts directory
-   mkdir -p /path/to/trunk-recorder/scripts
-
-   # Copy logging script
-   cp remote/log_mongo_http.sh /path/to/trunk-recorder/scripts/
+   # Copy files to trunk-recorder directory
+   cp remote/log_mongo_http.sh /path/to/trunk-recorder/
+   cp remote/.env.example /path/to/trunk-recorder/.env
 
    # Make script executable
-   chmod +x /path/to/trunk-recorder/scripts/log_mongo_http.sh
-   ```
-
-2. Configure environment settings:
-   ```bash
-   # Copy environment template
-   cp remote/.env.example /path/to/trunk-recorder/scripts/.env
+   chmod +x /path/to/trunk-recorder/log_mongo_http.sh
 
    # Edit settings for local setup
-   nano /path/to/trunk-recorder/scripts/.env
+   nano /path/to/trunk-recorder/.env
    # Set HTTP_MONGO_HOST=localhost
    # Set HTTP_MONGO_PORT=3001
    ```
@@ -112,17 +106,14 @@ The dashboard requires trunk-recorder to send events via the logging script. Thi
 
 1. On the trunk-recorder machine:
    ```bash
-   # Create scripts directory
-   mkdir -p /path/to/trunk-recorder/scripts
-
-   # Copy logging scripts
-   scp remote/* user@trunk-recorder-machine:/path/to/trunk-recorder/scripts/
+   # Copy files to trunk-recorder directory
+   scp remote/* user@trunk-recorder-machine:/path/to/trunk-recorder/
 
    # Make script executable
-   chmod +x /path/to/trunk-recorder/scripts/log_mongo_http.sh
+   chmod +x /path/to/trunk-recorder/log_mongo_http.sh
 
    # Edit environment settings
-   nano /path/to/trunk-recorder/scripts/.env
+   nano /path/to/trunk-recorder/.env
    # Set HTTP_MONGO_HOST to your dashboard machine's IP
    # Set HTTP_MONGO_PORT=3001
    ```
@@ -134,15 +125,11 @@ Add the logging script to your trunk-recorder's config.json:
 ```json
 {
     "shortName": "your-system-name",
-    "control_channels": [851162500,851250000,851300000,853587500],
+    "control_channels": [851000000,852000000],
     "type": "p25",
     "modulation": "qpsk",
-    "talkgroupsFile": "trs_tg_6643.csv",
-    "transmissionArchive": true,
-    "compressWav": false,
-    "digitalLevels": 3,
-    "minDuration": 0.3,
-    "unitScript": "./scripts/log_mongo_http.sh"  // Path to the logging script
+    "talkgroupsFile": "talkgroups.csv",
+    "unitScript": "./log_mongo_http.sh"
 }
 ```
 
@@ -171,12 +158,21 @@ Key points:
   docker compose ps
   ```
 
-## Security Considerations
+## ⚠️ Security Warning
 
-- The dashboard accepts connections from any IP
-- Use firewall rules to restrict access
+**IMPORTANT**: This dashboard has no built-in authentication or encryption. By default, it accepts connections from any IP address and transmits data in plain text.
+
+For safe operation:
+- Run the dashboard only on your private network
+- Use firewall rules to restrict access to trusted IPs
+- Never expose the dashboard to the internet without proper security measures
 - Consider using Tailscale for secure remote access
-- Enable HTTPS if exposing to the internet
+
+If you need public access, you must implement additional security:
+- Set up a reverse proxy with HTTPS
+- Add authentication
+- Configure proper firewall rules
+- Understand and accept the security implications
 
 ## Need Help?
 
