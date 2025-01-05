@@ -180,6 +180,31 @@ If you need public access, you must implement additional security:
 - Configure proper firewall rules
 - Understand and accept the security implications
 
+## Updating
+
+To update to the latest version:
+
+1. Stop the current instance:
+   ```bash
+   cd /path/to/docker-trunk-recorder-dashboard
+   docker compose down
+   ```
+
+2. Pull the latest code:
+   ```bash
+   git pull origin main
+   ```
+
+3. Rebuild and restart:
+   ```bash
+   docker compose build dashboard
+   docker compose up -d dashboard
+   ```
+
+4. Verify the update:
+   - Check the version number in the dashboard UI
+   - Look for any new features or fixes in the commit history
+
 ## Need Help?
 
 - Check the [Issues](https://github.com/yourusername/docker-trunk-recorder-dashboard/issues) page
