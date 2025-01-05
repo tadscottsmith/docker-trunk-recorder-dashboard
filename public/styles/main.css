@@ -45,9 +45,21 @@ body {
     gap: 20px;
 }
 
-.header-container h1 {
+.title-container {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.title-container h1 {
     margin: 0;
     color: var(--text-color);
+}
+
+.version {
+    color: var(--secondary-text);
+    font-size: 0.8em;
+    opacity: 0.8;
 }
 
 .button-group {
