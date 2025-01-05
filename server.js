@@ -112,15 +112,20 @@ try {
             const dataLines = csvLines.slice(headerIndex + 1);
             dataLines.forEach(line => {
                 if (line.trim()) {
-                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => field.replace(/"/g, ''));
-                    talkgroupsMap.set(decimal, {
-                        hex: hex?.trim() || '',
-                        alphaTag: alphaTag?.trim() || `Talkgroup ${decimal}`,
-                        mode: mode?.trim() || '',
-                        description: description?.trim() || '',
-                        tag: tag?.trim() || 'Unknown',
-                        category: category?.trim() || 'Unknown'
+                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
+                        // Remove quotes and trim whitespace
+                        return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
                     });
+                    if (decimal) {
+                        talkgroupsMap.set(decimal, {
+                            hex: hex || '',
+                            alphaTag: alphaTag || `Talkgroup ${decimal}`,
+                            mode: mode || '',
+                            description: description || '',
+                            tag: tag || 'Unknown',
+                            category: category || 'Unknown'
+                        });
+                    }
                 }
             });
             console.log(`Loaded ${talkgroupsMap.size} talkgroups`);
@@ -182,15 +187,20 @@ app.post('/api/talkgroups/reload', async (req, res) => {
             console.log('Data lines to process:', dataLines.length);
             dataLines.forEach(line => {
                 if (line.trim()) {
-                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => field.replace(/"/g, ''));
-                    talkgroupsMap.set(decimal, {
-                        hex: hex?.trim() || '',
-                        alphaTag: alphaTag?.trim() || `Talkgroup ${decimal}`,
-                        mode: mode?.trim() || '',
-                        description: description?.trim() || '',
-                        tag: tag?.trim() || 'Unknown',
-                        category: category?.trim() || 'Unknown'
+                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
+                        // Remove quotes and trim whitespace
+                        return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
                     });
+                    if (decimal) {
+                        talkgroupsMap.set(decimal, {
+                            hex: hex || '',
+                            alphaTag: alphaTag || `Talkgroup ${decimal}`,
+                            mode: mode || '',
+                            description: description || '',
+                            tag: tag || 'Unknown',
+                            category: category || 'Unknown'
+                        });
+                    }
                 }
             });
             console.log(`Reloaded ${talkgroupsMap.size} talkgroups`);
