@@ -76,8 +76,11 @@ The dashboard supports two ways to manage talkgroup metadata:
 
 3. Update Talkgroup Information:
    - Edit talkgroups.csv directly
-   - System will load changes on next restart
-   - Or use the API endpoint:
+   - Use the reload endpoint to apply changes without restart:
+     ```bash
+     curl -X POST http://localhost:3000/api/talkgroups/reload
+     ```
+   - Or update individual talkgroups via API:
      ```bash
      # Update talkgroup 1001
      curl -X POST http://localhost:3000/api/talkgroups/1001 \
