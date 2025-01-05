@@ -494,37 +494,60 @@ async function connectToMongo() {
         messageCount = 0; // Reset counter
     }, 30000);
 
-    const changeStream = collection.watch();
-    
-    changeStream.on('change', async (change) => {
-        if (change.operationType === 'insert') {
-            const event = change.fullDocument;
-            messageCount++;
+    // Function to create and handle change stream
+    async function setupChangeStream() {
+        try {
+            const changeStream = collection.watch();
+            
+            changeStream.on('change', async (change) => {
+                if (change.operationType === 'insert') {
+                    const event = change.fullDocument;
+                    messageCount++;
 
-            // Track unknown talkgroups and save immediately
-            const talkgroupId = event.talkgroupOrSource?.toString();
-            if (talkgroupId && !talkgroupsMap.has(talkgroupId)) {
-                unknownTalkgroups.add(talkgroupId);
-                // Save changes immediately when new talkgroup is discovered
-                await saveTalkgroups();
-            }
+                    // Track unknown talkgroups and save immediately
+                    const talkgroupId = event.talkgroupOrSource?.toString();
+                    if (talkgroupId && !talkgroupsMap.has(talkgroupId)) {
+                        unknownTalkgroups.add(talkgroupId);
+                        // Save changes immediately when new talkgroup is discovered
+                        await saveTalkgroups();
+                    }
 
-            // Add talkgroup metadata to the event
-            const talkgroupInfo = talkgroupsMap.get(talkgroupId);
-            if (talkgroupInfo) {
-                event.talkgroupInfo = talkgroupInfo;
-            }
-            io.emit('radioEvent', event);
+                    // Add talkgroup metadata to the event
+                    const talkgroupInfo = talkgroupsMap.get(talkgroupId);
+                    if (talkgroupInfo) {
+                        event.talkgroupInfo = talkgroupInfo;
+                    }
+                    io.emit('radioEvent', event);
+                }
+            });
+
+            changeStream.on('error', async (error) => {
+                console.error('Change stream error:', error);
+                // Wait a bit before attempting to reconnect
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                console.log('Attempting to reconnect change stream...');
+                await setupChangeStream();
+            });
+
+            changeStream.on('close', async () => {
+                console.log('Change stream closed, attempting to reconnect...');
+                // Wait a bit before attempting to reconnect
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                await setupChangeStream();
+            });
+
+            console.log('Change stream setup successfully');
+        } catch (error) {
+            console.error('Error setting up change stream:', error);
+            // Wait a bit before attempting to reconnect
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            console.log('Attempting to reconnect change stream...');
+            await setupChangeStream();
         }
-    });
+    }
 
-    changeStream.on('error', (error) => {
-        console.error('Change stream error:', error);
-    });
-
-    changeStream.on('close', () => {
-        console.log('Change stream closed');
-    });
+    // Initial setup of change stream
+    await setupChangeStream();
 }
 
 connectToMongo().catch(console.error);
