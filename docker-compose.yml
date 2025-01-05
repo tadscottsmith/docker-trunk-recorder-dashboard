@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - trunk_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "'db.runCommand(\"ping\").ok'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME=trunk_recorder
+      - COLLECTION_NAME=radio_events
+    depends_on:
+      - mongodb
+    networks:
+      - trunk_network
+
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingest
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DB_NAME=trunk_recorder
+      - COLLECTION_NAME=radio_events
+      - HTTP_MONGO_PORT=3001
+    depends_on:
+      - mongodb
+    networks:
+      - trunk_network
+
+  # Initialize MongoDB Replica Set
+  mongo-init:
+    image: mongo:latest
+    restart: "no"
+    depends_on:
+      - mongodb
+    command: >
+      bash -c "sleep 10 && mongosh --host mongodb:27017 --eval 'rs.initiate()'"
+    networks:
+      - trunk_network
+
+networks:
+  trunk_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

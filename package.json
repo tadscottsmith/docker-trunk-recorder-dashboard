@@ -1,0 +1,26 @@
+{
+  "name": "trunk-recorder-dashboard",
+  "version": "1.0.0",
+  "description": "A real-time dashboard for visualizing trunk-recorder radio activity",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "radio",
+    "monitoring",
+    "dashboard",
+    "trunk-recorder",
+    "real-time",
+    "websockets"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "mongodb": "^6.3.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  }
+}
