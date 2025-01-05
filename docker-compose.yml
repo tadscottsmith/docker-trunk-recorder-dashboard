@@ -8,8 +8,9 @@ services:
       "--replSet", "rs0",
       "--bind_ip_all",
       "--setParameter", "enableTestCommands=1",
-      "--setParameter", "defaultRWConcern={readConcernLevel: \"local\"}",
-      "--setParameter", "replicationCoordinator.enableMajorityReadConcern=false"
+      "--setParameter", "replicationCoordinator.enableMajorityReadConcern=false",
+      "--setParameter", "writePeriodicNoops=false",
+      "--setParameter", "minOplogRetentionHours=1"
     ]
     volumes:
       - mongodb_data:/data/db
