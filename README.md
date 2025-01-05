@@ -14,7 +14,6 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 - Automatic talkgroup discovery and tracking
 - Import talkgroup data from Radio Reference
 - Auto-saves newly discovered talkgroups
-- Edit talkgroup information on the fly
 - Automatic updates when talkgroup file changes
 
 ### Historical Data
@@ -63,8 +62,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: Auto-Discovery (Default)
 - Start using the dashboard right away
 - System automatically tracks new talkgroups as they appear
-- Edit talkgroup details through the web interface
-- Changes are saved automatically
+- Unknown talkgroups are saved to talkgroups.csv
 
 ### Option 2: Radio Reference Import
 1. Log in to [Radio Reference](https://www.radioreference.com)
@@ -75,11 +73,8 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 
 ### Talkgroup Updates
 - Edit talkgroups.csv directly - changes are detected automatically
-- Update talkgroups through the web interface:
-  * Click on any talkgroup in the list to open its details
-  * Edit the name, description, tag, or category
-  * Changes save automatically and sync to all connected browsers
-- New talkgroups are automatically discovered and added
+- View talkgroup details by clicking on any entry in the list
+- New talkgroups are automatically discovered and added to the list
 
 ## Trunk Recorder Configuration
 
