@@ -8,9 +8,7 @@ services:
       "--replSet", "rs0",
       "--bind_ip_all",
       "--setParameter", "enableTestCommands=1",
-      "--setParameter", "replicationCoordinator.enableMajorityReadConcern=false",
-      "--setParameter", "writePeriodicNoops=false",
-      "--setParameter", "minOplogRetentionHours=1"
+      "--setParameter", "replicationCoordinator.enableMajorityReadConcern=false"
     ]
     volumes:
       - mongodb_data:/data/db
