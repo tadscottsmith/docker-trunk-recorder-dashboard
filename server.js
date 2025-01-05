@@ -446,10 +446,24 @@ app.get('/api/history/:duration', async (req, res) => {
     }
 });
 
-// Version endpoint
+// Version and config endpoint
 app.get('/api/version', (req, res) => {
     const version = require('./package.json').version;
     res.json({ version });
+});
+
+// Config endpoint
+app.get('/api/config', (req, res) => {
+    const countyFilters = (process.env.COUNTY_FILTERS || 'hamco|Hamilton,warco|Warren,butco|Butler,monco|Montgomery')
+        .split(',')
+        .map(filter => {
+            const [shortName, displayName] = filter.split('|');
+            return { shortName, displayName };
+        });
+    
+    res.json({
+        countyFilters
+    });
 });
 
 // Serve static files

@@ -6,25 +6,53 @@ export class UIManager {
         this.setupFilterControls();
     }
 
-    setupFilterControls() {
-        // Set up county filter buttons
-        const countyButtons = document.querySelectorAll('.county-button');
-        countyButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Remove active class from all buttons
-                countyButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                button.classList.add('active');
-                
-                if (button.id === 'allCounties') {
-                    this.talkgroupManager.clearShortNameFilter();
-                } else {
-                    const county = button.dataset.county;
-                    this.talkgroupManager.setShortNameFilter(county);
-                }
-                this.updateUI();
+    async setupFilterControls() {
+        try {
+            // Fetch county configuration
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            
+            // Get the county filter container
+            const filterContainer = document.getElementById('countyFilter');
+            
+            // Create "All" button
+            const allButton = document.createElement('button');
+            allButton.id = 'allCounties';
+            allButton.className = 'county-button active';
+            allButton.textContent = 'All';
+            filterContainer.appendChild(allButton);
+            
+            // Create county-specific buttons
+            config.countyFilters.forEach(({ shortName, displayName }) => {
+                const button = document.createElement('button');
+                button.id = `${shortName}Filter`;
+                button.className = 'county-button';
+                button.dataset.county = shortName;
+                button.textContent = displayName;
+                filterContainer.appendChild(button);
             });
-        });
+
+            // Set up click handlers
+            const countyButtons = document.querySelectorAll('.county-button');
+            countyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    countyButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    if (button.id === 'allCounties') {
+                        this.talkgroupManager.clearShortNameFilter();
+                    } else {
+                        const county = button.dataset.county;
+                        this.talkgroupManager.setShortNameFilter(county);
+                    }
+                    this.updateUI();
+                });
+            });
+        } catch (error) {
+            console.error('Error setting up county filters:', error);
+        }
     }
 
     toggleFilter() {
