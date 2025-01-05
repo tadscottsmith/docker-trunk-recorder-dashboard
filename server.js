@@ -145,7 +145,7 @@ app.get('/api/talkgroups', (req, res) => {
     });
 });
 
-// Endpoint to force reload of talkgroups.csv
+// IMPORTANT: This endpoint must come before the :decimal endpoint to prevent route conflicts
 app.post('/api/talkgroups/reload', async (req, res) => {
     try {
         if (fs.existsSync(talkgroupFile)) {
