@@ -73,6 +73,11 @@ export class RadioMonitor {
 
     async initialize() {
         try {
+            // Fetch version
+            const versionResponse = await fetch('/api/version');
+            const versionData = await versionResponse.json();
+            document.getElementById('version').textContent = `v${versionData.version}`;
+
             // Fetch talkgroup metadata
             await this.refreshMetadata();
 

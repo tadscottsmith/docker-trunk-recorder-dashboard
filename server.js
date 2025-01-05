@@ -298,8 +298,27 @@ app.post('/api/talkgroups/:decimal', express.json(), async (req, res) => {
 // Endpoint to get talkgroup-specific history
 app.get('/api/talkgroup/:id/history', async (req, res) => {
     try {
-        const client = new MongoClient(MONGO_URI);
-        await client.connect();
+        const client = new MongoClient(MONGO_URI, {
+            serverSelectionTimeoutMS: 60000,
+            connectTimeoutMS: 60000,
+        });
+        
+        let retries = 0;
+        const maxRetries = 5;
+        
+        while (retries < maxRetries) {
+            try {
+                await client.connect();
+                break;
+            } catch (error) {
+                retries++;
+                if (retries === maxRetries) {
+                    throw error;
+                }
+                const delay = Math.min(1000 * Math.pow(2, retries), 10000);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
         const db = client.db(DB_NAME);
         const collection = db.collection(COLLECTION_NAME);
 
@@ -357,8 +376,27 @@ app.get('/api/talkgroup/:id/history', async (req, res) => {
 // Endpoint to get historical events
 app.get('/api/history/:duration', async (req, res) => {
     try {
-        const client = new MongoClient(MONGO_URI);
-        await client.connect();
+        const client = new MongoClient(MONGO_URI, {
+            serverSelectionTimeoutMS: 60000,
+            connectTimeoutMS: 60000,
+        });
+        
+        let retries = 0;
+        const maxRetries = 5;
+        
+        while (retries < maxRetries) {
+            try {
+                await client.connect();
+                break;
+            } catch (error) {
+                retries++;
+                if (retries === maxRetries) {
+                    throw error;
+                }
+                const delay = Math.min(1000 * Math.pow(2, retries), 10000);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
         const db = client.db(DB_NAME);
         const collection = db.collection(COLLECTION_NAME);
 
@@ -408,13 +446,43 @@ app.get('/api/history/:duration', async (req, res) => {
     }
 });
 
+// Version endpoint
+app.get('/api/version', (req, res) => {
+    const version = require('./package.json').version;
+    res.json({ version });
+});
+
 // Serve static files
 app.use(express.static('public'));
 
 // Connect to MongoDB and set up change stream
 async function connectToMongo() {
-    const client = new MongoClient(MONGO_URI);
-    await client.connect();
+    const client = new MongoClient(MONGO_URI, {
+        serverSelectionTimeoutMS: 60000, // 1 minute timeout
+        connectTimeoutMS: 60000,
+    });
+    
+    // Retry connection with exponential backoff
+    let retries = 0;
+    const maxRetries = 5;
+    
+    while (retries < maxRetries) {
+        try {
+            console.log('Attempting to connect to MongoDB...');
+            await client.connect();
+            console.log('Successfully connected to MongoDB');
+            break;
+        } catch (error) {
+            retries++;
+            if (retries === maxRetries) {
+                console.error('Failed to connect to MongoDB after maximum retries:', error);
+                throw error;
+            }
+            const delay = Math.min(1000 * Math.pow(2, retries), 10000); // Max 10 second delay
+            console.log(`Connection attempt ${retries} failed. Retrying in ${delay/1000} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
     const db = client.db(DB_NAME);
     const collection = db.collection(COLLECTION_NAME);
 

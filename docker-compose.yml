@@ -25,7 +25,7 @@ services:
     volumes:
       - ./examples/talkgroups.csv:/app/talkgroups.csv
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
       - TALKGROUP_FILE=/app/talkgroups.csv
@@ -42,7 +42,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
       - HTTP_MONGO_PORT=3001
