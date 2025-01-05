@@ -3,7 +3,7 @@ export class UIManager {
         this.talkgroupManager = talkgroupManager;
         this.showActiveOnly = false;
         this.currentSort = 'id';
-        this.setupFilterControls();
+        // Remove setupFilterControls from constructor since it's called after initialization
     }
 
     async setupFilterControls() {
@@ -12,8 +12,9 @@ export class UIManager {
             const response = await fetch('/api/config');
             const config = await response.json();
             
-            // Get the county filter container
+            // Get and clear the county filter container
             const filterContainer = document.getElementById('countyFilter');
+            filterContainer.innerHTML = '';
             
             // Create "All" button
             const allButton = document.createElement('button');
