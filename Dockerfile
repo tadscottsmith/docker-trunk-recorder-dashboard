@@ -11,7 +11,6 @@ RUN npm install
 # Copy application files
 COPY server.js ./
 COPY public/ ./public/
-COPY trs_tg_6643.csv ./
 
 # Expose port for the main dashboard
 EXPOSE 3000

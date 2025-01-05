@@ -60,11 +60,11 @@ The dashboard supports two ways to manage talkgroup metadata:
 
 2. Start with Radio Reference Data:
    - Download the CSV file from Radio Reference
-   - Rename it to talkgroups.csv and place in repository
-   - Add to your .env:
-     ```ini
-     TALKGROUP_FILE=/app/talkgroups.csv
-     ```
+   - Rename it to talkgroups.csv and place it in the examples/ directory
+   - The system is pre-configured to use /app/talkgroups.csv inside the container
+   - The file is mounted from ./examples/talkgroups.csv, so you can:
+     * Update the file anytime without rebuilding
+     * Changes are reflected immediately
    - The system will:
      * Use Radio Reference data for known talkgroups
      * Auto-add any new talkgroups discovered

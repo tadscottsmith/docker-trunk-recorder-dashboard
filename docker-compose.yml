@@ -22,10 +22,13 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    volumes:
+      - ./examples/talkgroups.csv:/app/talkgroups.csv
     environment:
       - MONGODB_URI=mongodb://mongodb:27017
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
+      - TALKGROUP_FILE=/app/talkgroups.csv
     depends_on:
       - mongodb
     networks:
