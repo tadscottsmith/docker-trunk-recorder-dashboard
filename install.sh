@@ -80,16 +80,18 @@ check_requirements() {
         errors=$((errors + 1))
     fi
     
-    # Check for existing files
-    local git_files=(".git" ".gitignore" "package.json" "docker-compose.yml")
-    for file in "${git_files[@]}"; do
-        if [ -e "$file" ]; then
-            echo -e "${RED}Found existing file/directory: $file${NC}"
-            echo -e "${YELLOW}Please run this script in an empty directory${NC}"
-            errors=$((errors + 1))
-            break
-        fi
-    done
+# Check for existing files (skip if updating)
+    if [ "$1" != "--update" ] && [ "$1" != "--installing" ]; then
+        local git_files=(".git" ".gitignore" "package.json" "docker-compose.yml")
+        for file in "${git_files[@]}"; do
+            if [ -e "$file" ]; then
+                echo -e "${RED}Found existing file/directory: $file${NC}"
+                echo -e "${YELLOW}Please run this script in an empty directory${NC}"
+                errors=$((errors + 1))
+                break
+            fi
+        done
+    fi
     
     if [ $errors -gt 0 ]; then
         echo -e "${RED}Found ${errors} error(s). Please fix them and try again.${NC}"
@@ -231,7 +233,7 @@ setup_environment() {
 # Initialize installation
 echo -e "${GREEN}Starting Trunk Recorder Dashboard installation...${NC}"
 echo -e "${YELLOW}Checking system requirements...${NC}"
-check_requirements
+check_requirements "$1"
 
 # Step 1: Setup environment
 echo -e "${YELLOW}[1/6] Setting up environment...${NC}"
