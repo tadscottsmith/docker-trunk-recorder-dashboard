@@ -193,7 +193,7 @@ setup_environment() {
         echo -e "${GREEN}Using existing configuration${NC}"
     else
         echo -e "${YELLOW}Downloading environment configuration file...${NC}"
-        curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/feature/improved-filtering/.env.example
+        curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/bfa1423/.env.example
         verify_command "$?" "Failed to download .env.example"
         
         mv .env.example .env
@@ -247,7 +247,7 @@ if [ -f ".env" ]; then
 fi
 
 # Clone repository
-git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git temp_clone
+git clone -b feature/improved-filtering https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git temp_clone
 verify_command "$?" "Failed to clone repository"
 
 # Move files from temp directory
