@@ -295,14 +295,27 @@ echo -e "${YELLOW}→ Starting dashboard and ingest services${NC}"
 docker-compose up -d dashboard ingest
 echo -e "${GREEN}✓ Services started${NC}"
 
+# Get dashboard port from .env
+get_dashboard_port() {
+    if [ -f ".env" ]; then
+        DASHBOARD_PORT=$(grep "^DASHBOARD_PORT=" .env | cut -d '=' -f2)
+    fi
+    # Default to 3000 if not set
+    DASHBOARD_PORT=${DASHBOARD_PORT:-3000}
+    echo "$DASHBOARD_PORT"
+}
+
 # Step 6: Verify installation
 echo -e "${YELLOW}[6/6] Verifying installation...${NC}"
 echo -e "${YELLOW}→ Checking container status...${NC}"
 
+# Get configured dashboard port
+DASHBOARD_PORT=$(get_dashboard_port)
+
 # Wait for services to be ready (timeout after 30 seconds)
 timeout=30
 while [ $timeout -gt 0 ]; do
-    if curl -s http://localhost:3000 >/dev/null; then
+    if curl -s "http://localhost:${DASHBOARD_PORT}" >/dev/null; then
         echo -e "${GREEN}Services are ready!${NC}"
         break
     fi
@@ -335,7 +348,7 @@ for container in "${required_containers[@]}"; do
 done
 
 echo -e "${GREEN}Installation complete!${NC}"
-echo -e "Access the dashboard at: http://localhost:3000"
+echo -e "Access the dashboard at: http://localhost:${DASHBOARD_PORT}"
 
 echo -e "\nUseful commands:"
 echo -e "  Stop dashboard:  docker-compose down"
