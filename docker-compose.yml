@@ -88,10 +88,10 @@ services:
       mongodb:
         condition: service_healthy
     command: >
-      bash -c "
-        echo 'Waiting for MongoDB to start...' &&
+      bash -c '
+        echo "Waiting for MongoDB to start..." &&
         sleep 10 &&
-        mongosh --host mongodb:27017 --eval '
+        mongosh --host mongodb:27017 --eval "
           // Initialize replica set
           config = {
             _id: \"rs0\",
@@ -109,10 +109,10 @@ services:
           // Switch to trunk_recorder database
           db = db.getSiblingDB(\"trunk_recorder\");
           
-          // Create collections with validators
+          // Define collection schema
           const validator = {
             validator: {
-              $jsonSchema: {
+              \$jsonSchema: {
                 bsonType: \"object\",
                 required: [\"type\", \"timestamp\"],
                 properties: {
@@ -123,16 +123,19 @@ services:
             }
           };
           
-          // Create collection if it doesn't exist
+          // Create or update collection schema
           try {
             db.createCollection(\"radio_events\", validator);
+            print(\"Created radio_events collection with schema validation\");
           } catch (e) {
-            if (e.codeName === 'NamespaceExists') {
+            if (e.codeName === \"NamespaceExists\") {
               db.runCommand({
                 collMod: \"radio_events\",
                 validator: validator.validator
               });
+              print(\"Updated radio_events collection schema\");
             } else {
+              print(\"Error: \" + e);
               throw e;
             }
           }
@@ -140,15 +143,17 @@ services:
           // Create indexes
           db.radio_events.createIndex({ timestamp: -1 });
           db.radio_events.createIndex({ \"talkgroup.id\": 1 });
+          print(\"Created indexes\");
           
-          // Disable FTDC to reduce warnings
+          // Disable diagnostic data collection
           db.adminCommand({
             setParameter: 1,
             diagnosticDataCollectionDirectorySizeMB: 100,
             diagnosticDataCollectionEnabled: false
           });
-        '
-      "
+          print(\"Configured diagnostic data collection\");
+        "
+      '
     networks:
       - trunk_network
 
