@@ -367,20 +367,46 @@ echo -e "  Stop dashboard:  docker-compose down"
 echo -e "  Update:         git pull && docker-compose up -d --build"
 echo -e "  Create logs:    ./install.sh --logs"
 
+# Function to get current branch
+get_current_branch() {
+    # Extract branch from the git clone command in this script
+    grep "git clone.*-b" "$0" | sed -n 's/.*-b \([^ ]*\).*/\1/p'
+}
+
 # Function to check for updates
 check_for_update() {
     echo -e "${YELLOW}Checking for updates...${NC}"
     
-    # Get the latest commit hash from the remote repository
-    local latest_commit=$(curl -s https://api.github.com/repos/LumenPrima/docker-trunk-recorder-dashboard/commits/feature/improved-filtering | grep -o '"sha": "[^"]*' | cut -d'"' -f4)
-    if [ -z "$latest_commit" ]; then
-        echo -e "${RED}Failed to check for updates${NC}"
-        return 1
-    }
+    # First try the branch this script was downloaded from
+    local current_branch=$(get_current_branch)
+    if [ -n "$current_branch" ]; then
+        echo -e "${YELLOW}Checking current branch: ${current_branch}${NC}"
+        local latest_commit=$(curl -s "https://api.github.com/repos/LumenPrima/docker-trunk-recorder-dashboard/commits/${current_branch}" | grep -o '"sha": "[^"]*' | cut -d'"' -f4)
+        if [ -n "$latest_commit" ]; then
+            echo -e "${YELLOW}Found version: ${current_branch} (${latest_commit})${NC}"
+            local ref="${current_branch}"
+        fi
+    fi
+    
+    # If no branch found or branch check failed, try latest release
+    if [ -z "$ref" ]; then
+        echo -e "${YELLOW}Checking latest release...${NC}"
+        local latest_release=$(curl -s https://api.github.com/repos/LumenPrima/docker-trunk-recorder-dashboard/releases/latest | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
+        if [ -n "$latest_release" ]; then
+            echo -e "${YELLOW}Found version: ${latest_release}${NC}"
+            ref="${latest_release}"
+        fi
+    fi
+    
+    # If no release found, try main branch
+    if [ -z "$ref" ]; then
+        echo -e "${YELLOW}No release found, using main branch${NC}"
+        ref="main"
+    fi
     
     # Download the latest version and compare with current
     local temp_script=$(mktemp)
-    if ! curl -s "https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/${latest_commit}/install.sh" -o "$temp_script"; then
+    if ! curl -s "https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/${ref}/install.sh" -o "$temp_script"; then
         echo -e "${RED}Failed to download latest version${NC}"
         rm -f "$temp_script"
         return 1
