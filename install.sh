@@ -234,8 +234,28 @@ setup_environment
 # Step 2: Clone repository
 echo -e "${YELLOW}[2/6] Cloning repository...${NC}"
 echo -e "${YELLOW}→ From: https://github.com/LumenPrima/docker-trunk-recorder-dashboard${NC}"
-git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git .
+
+# Save .env if it exists
+if [ -f ".env" ]; then
+    echo -e "${YELLOW}Saving existing .env file...${NC}"
+    mv .env .env.tmp
+fi
+
+# Clone repository
+git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git temp_clone
 verify_command "$?" "Failed to clone repository"
+
+# Move files from temp directory
+echo -e "${YELLOW}Moving repository files...${NC}"
+mv temp_clone/* temp_clone/.[!.]* . 2>/dev/null || true
+rm -rf temp_clone
+
+# Restore .env if it was saved
+if [ -f ".env.tmp" ]; then
+    echo -e "${YELLOW}Restoring .env file...${NC}"
+    mv .env.tmp .env
+fi
+
 echo -e "${GREEN}✓ Repository cloned successfully${NC}"
 
 # Step 3: Handle data directory
