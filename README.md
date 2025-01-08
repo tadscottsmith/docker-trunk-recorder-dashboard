@@ -34,7 +34,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/1248a1b/install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/8026732/install.sh
    chmod +x install.sh
    ./install.sh
    ```
@@ -137,6 +137,8 @@ The system automatically:
 - Configures diagnostic data collection to minimize warnings
 - Validates data structure on insertion
 - Provides error handling for initialization issues
+- Shows detailed progress during initialization
+- Logs all database operations for troubleshooting
 
 ## Basic Configuration
 
