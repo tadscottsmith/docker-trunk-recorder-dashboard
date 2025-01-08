@@ -66,10 +66,18 @@ class MongoDBService {
                         io.emit('systemsUpdated');
                     }
 
-                    // Add talkgroup metadata to the event
+                    // Add talkgroup and system metadata to the event
                     const talkgroupInfo = talkgroupService.getTalkgroupInfo(talkgroupId);
                     if (talkgroupInfo) {
                         event.talkgroupInfo = talkgroupInfo;
+                        // Add system alias if this talkgroup belongs to a system
+                        if (talkgroupInfo.shortName) {
+                            event.systemInfo = {
+                                shortName: talkgroupInfo.shortName,
+                                displayName: talkgroupService.getKnownSystems()
+                                    .find(s => s.shortName === talkgroupInfo.shortName)?.displayName
+                            };
+                        }
                     }
                     io.emit('radioEvent', event);
                 }
@@ -140,10 +148,20 @@ class MongoDBService {
         const events = recentEvents.length <= dayEvents.length ? recentEvents : dayEvents;
 
         // Add metadata to events
+        const systemMap = new Map(talkgroupService.getKnownSystems()
+            .map(s => [s.shortName, s.displayName]));
+
         events.forEach(event => {
             const talkgroupInfo = talkgroupService.getTalkgroupInfo(event.talkgroupOrSource);
             if (talkgroupInfo) {
                 event.talkgroupInfo = talkgroupInfo;
+                // Add system alias if this talkgroup belongs to a system
+                if (talkgroupInfo.shortName) {
+                    event.systemInfo = {
+                        shortName: talkgroupInfo.shortName,
+                        displayName: systemMap.get(talkgroupInfo.shortName)
+                    };
+                }
             }
         });
 
@@ -181,10 +199,20 @@ class MongoDBService {
             .toArray();
 
         // Add metadata to events
+        const systemMap = new Map(talkgroupService.getKnownSystems()
+            .map(s => [s.shortName, s.displayName]));
+
         events.forEach(event => {
             const talkgroupInfo = talkgroupService.getTalkgroupInfo(event.talkgroupOrSource);
             if (talkgroupInfo) {
                 event.talkgroupInfo = talkgroupInfo;
+                // Add system alias if this talkgroup belongs to a system
+                if (talkgroupInfo.shortName) {
+                    event.systemInfo = {
+                        shortName: talkgroupInfo.shortName,
+                        displayName: systemMap.get(talkgroupInfo.shortName)
+                    };
+                }
             }
         });
 

@@ -12,11 +12,27 @@ class SystemAliasService {
 
     setupFileWatcher() {
         const dir = path.dirname(this.aliasFile);
-        fs.watch(dir, (eventType, filename) => {
-            if (eventType === 'change' && filename === 'system-alias.csv') {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        fs.watch(this.aliasFile, (eventType) => {
+            if (eventType === 'change') {
                 console.log('System alias file changed, reloading...');
                 this.loadAliases();
                 // Notify any registered listeners
+                if (this.onAliasesChanged) {
+                    this.onAliasesChanged();
+                }
+            }
+        });
+
+        // Also watch the directory for file creation
+        fs.watch(dir, (eventType, filename) => {
+            if (filename === 'system-alias.csv' && !fs.existsSync(this.aliasFile)) {
+                console.log('System alias file created, ensuring defaults...');
+                this.ensureAliasFile();
+                this.loadAliases();
                 if (this.onAliasesChanged) {
                     this.onAliasesChanged();
                 }

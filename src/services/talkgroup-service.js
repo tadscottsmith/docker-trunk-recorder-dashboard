@@ -151,7 +151,7 @@ class TalkgroupService {
                             description: description || '',
                             tag: tag || 'Unknown',
                             category: category || 'Unknown',
-                            shortName: filePath.startsWith('talkgroups.csv') ? null : filePath.split('-')[0]
+                            shortName: path.basename(filePath).startsWith('talkgroups.csv') ? null : path.basename(filePath).split('-')[0]
                         });
                     }
                 }

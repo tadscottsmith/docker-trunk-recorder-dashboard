@@ -337,7 +337,19 @@ body {
     border-radius: 6px;
     font-size: 0.7em;
     vertical-align: middle;
+    margin-right: 4px;
     transition: background-color 0.3s;
+}
+
+.talkgroup-system {
+    display: inline;
+    background-color: var(--secondary-text);
+    color: var(--bg-color);
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 0.7em;
+    vertical-align: middle;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 /* Radio Indicators */

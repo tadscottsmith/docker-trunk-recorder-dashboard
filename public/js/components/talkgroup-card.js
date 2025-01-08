@@ -32,14 +32,13 @@ export class TalkgroupCard {
             <div>
                 <span class="talkgroup-title">${metadata.alphaTag || `Talkgroup ${talkgroup}`}</span>
                 <span class="talkgroup-tag">${metadata.tag || 'Unknown'}</span>
+                ${metadata.shortName ? `<span class="talkgroup-system">${this.talkgroupManager.getSystemAlias(metadata.shortName)}</span>` : ''}
             </div>
             <div>
                 <span class="talkgroup-description">${metadata.description || 'Unknown'}</span>
             </div>
             <div>
                 <span class="talkgroup-category">${metadata.category || 'Unknown Category'}</span>
-            </div>
-            <div>
             </div>
             <div class="stats">
                 <div class="stat-item">
