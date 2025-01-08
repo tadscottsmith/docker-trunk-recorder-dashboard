@@ -50,8 +50,12 @@ class SystemAliasService {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
+        // Only create the file if it doesn't exist
         if (!fs.existsSync(this.aliasFile)) {
+            console.log('Creating new system alias file with default header');
             fs.writeFileSync(this.aliasFile, 'shortName,alias\n', 'utf-8');
+        } else {
+            console.log('System alias file already exists, preserving content');
         }
     }
 
@@ -60,15 +64,20 @@ class SystemAliasService {
             const content = fs.readFileSync(this.aliasFile, 'utf-8');
             const lines = content.split('\n').filter(line => line.trim());
             
-            // Skip header
-            lines.slice(1).forEach(line => {
+            // Clear existing aliases before loading
+            this.aliasMap.clear();
+            
+            // Skip header if present
+            const dataLines = lines[0].toLowerCase().includes('shortname,alias') ? lines.slice(1) : lines;
+            
+            dataLines.forEach(line => {
                 const [shortName, alias] = line.split(',').map(s => s.trim());
                 if (shortName && alias) {
                     this.aliasMap.set(shortName, alias);
                 }
             });
             
-            console.log(`Loaded ${this.aliasMap.size} system aliases`);
+            console.log(`Loaded ${this.aliasMap.size} system aliases from ${this.aliasFile}`);
         } catch (error) {
             console.error('Error loading system aliases:', error);
         }
