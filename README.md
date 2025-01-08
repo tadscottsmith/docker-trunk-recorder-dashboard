@@ -34,7 +34,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/main/install.sh
+   curl -O https://raw.githubusercontent.com/drewm/docker-trunk-recorder-dashboard/main/install.sh
    chmod +x install.sh
    ./install.sh
    ```
@@ -109,7 +109,7 @@ Attach the generated ZIP file when reporting issues on GitHub for faster trouble
 2. Download and start the dashboard:
    ```bash
    # Get the code
-   git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git tr-dashboard
+   git clone https://github.com/drewm/docker-trunk-recorder-dashboard.git tr-dashboard
    cd tr-dashboard
 
    # Copy example environment file
@@ -341,4 +341,4 @@ Each file contains only the talkgroups for that specific P25 system, and the sys
 ## Documentation
 
 - [Development Guide](docs/development.md): Project structure, setup, and technical details
-- [Issues](https://github.com/LumenPrima/docker-trunk-recorder-dashboard/issues): Bug reports and feature requests
+- [Issues](https://github.com/drewm/docker-trunk-recorder-dashboard/issues): Bug reports and feature requests

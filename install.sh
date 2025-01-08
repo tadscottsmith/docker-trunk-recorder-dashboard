@@ -109,7 +109,7 @@ check_requirements
 
 # Step 1: Clone repository
 echo -e "${YELLOW}[1/5] Cloning repository...${NC}"
-clone_output=$(git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git tr-dashboard 2>&1)
+clone_output=$(git clone https://github.com/drewm/docker-trunk-recorder-dashboard.git tr-dashboard 2>&1)
 verify_command "$clone_output" "Failed to clone repository"
 cd tr-dashboard || exit 1
 
