@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # One-click installer for Trunk Recorder Dashboard
-# Version: 1.1
+# Version: 1.2
 # Author: Cline
 
 # Colors for output
@@ -79,11 +79,16 @@ check_requirements() {
         errors=$((errors + 1))
     fi
     
-    # Check if target directory already exists
-    if [ -d "tr-dashboard" ]; then
-        echo -e "${RED}Directory 'tr-dashboard' already exists${NC}"
-        errors=$((errors + 1))
-    fi
+    # Check for existing files
+    local git_files=(".git" ".gitignore" "package.json" "docker-compose.yml")
+    for file in "${git_files[@]}"; do
+        if [ -e "$file" ]; then
+            echo -e "${RED}Found existing file/directory: $file${NC}"
+            echo -e "${YELLOW}Please run this script in an empty directory${NC}"
+            errors=$((errors + 1))
+            break
+        fi
+    done
     
     if [ $errors -gt 0 ]; then
         echo -e "${RED}Found ${errors} error(s). Please fix them and try again.${NC}"
@@ -104,17 +109,41 @@ verify_command() {
     fi
 }
 
-# Initialize installation
-echo -e "${GREEN}Starting Trunk Recorder Dashboard installation...${NC}"
-echo -e "${YELLOW}Checking system requirements...${NC}"
-check_requirements
+# Function to handle data directory
+handle_data_directory() {
+    # Create data directory if it doesn't exist
+    if [ ! -d "data" ]; then
+        echo -e "${YELLOW}Creating data directory...${NC}"
+        mkdir -p data
+    else
+        echo -e "${YELLOW}Found existing data directory${NC}"
+    fi
 
-# Step 1: Clone repository
-echo -e "${YELLOW}[1/5] Cloning repository...${NC}"
-echo -e "${YELLOW}→ From: https://github.com/LumenPrima/docker-trunk-recorder-dashboard${NC}"
-git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git tr-dashboard
-cd tr-dashboard || exit 1
-echo -e "${GREEN}✓ Repository cloned successfully${NC}"
+    # Create subdirectories if they don't exist
+    for dir in "mongodb" "talkgroups"; do
+        if [ ! -d "data/$dir" ]; then
+            echo -e "${YELLOW}Creating data/$dir directory...${NC}"
+            mkdir -p "data/$dir"
+        else
+            echo -e "${YELLOW}Found existing data/$dir directory${NC}"
+        fi
+    done
+
+    # Create system alias file if it doesn't exist
+    if [ ! -f "data/system-alias.csv" ]; then
+        echo -e "${YELLOW}Creating system alias file...${NC}"
+        echo "shortName,alias" > data/system-alias.csv
+    else
+        echo -e "${YELLOW}Found existing system alias file${NC}"
+    fi
+
+    # Set proper permissions
+    echo -e "${YELLOW}Setting directory permissions...${NC}"
+    chmod -R 777 data
+    verify_command "$?" "Failed to set directory permissions"
+
+    echo -e "${GREEN}✓ Data directory setup complete${NC}"
+}
 
 # Function to gather logs and create bug report
 gather_logs() {
@@ -157,6 +186,17 @@ gather_logs() {
     echo -e "Please attach this file when reporting issues on GitHub"
 }
 
+# Initialize installation
+echo -e "${GREEN}Starting Trunk Recorder Dashboard installation...${NC}"
+echo -e "${YELLOW}Checking system requirements...${NC}"
+check_requirements
+
+# Step 1: Clone repository
+echo -e "${YELLOW}[1/5] Cloning repository...${NC}"
+echo -e "${YELLOW}→ From: https://github.com/LumenPrima/docker-trunk-recorder-dashboard${NC}"
+git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git .
+verify_command "$?" "Failed to clone repository"
+echo -e "${GREEN}✓ Repository cloned successfully${NC}"
 
 # Step 2: Setup environment
 echo -e "${YELLOW}[2/5] Setting up environment...${NC}"
@@ -168,22 +208,8 @@ fi
 cp .env.example .env
 verify_command "$?" "Failed to create .env file"
 
-# Create and setup data directories
-echo -e "${YELLOW}→ Creating data directories${NC}"
-mkdir -p data/mongodb data/talkgroups
-verify_command "$?" "Failed to create data directories"
-
-# Create system alias file
-echo -e "${YELLOW}→ Creating system alias file${NC}"
-touch data/system-alias.csv
-verify_command "$?" "Failed to create system alias file"
-
-# Set proper permissions
-echo -e "${YELLOW}→ Setting directory permissions${NC}"
-chmod -R 777 data
-verify_command "$?" "Failed to set directory permissions"
-
-echo -e "${GREEN}✓ Data directories setup complete${NC}"
+# Handle data directory
+handle_data_directory
 
 # Step 3: Build Docker images
 echo -e "${YELLOW}[3/5] Building Docker images...${NC}"
@@ -256,9 +282,9 @@ echo -e "${GREEN}Installation complete!${NC}"
 echo -e "Access the dashboard at: http://localhost:3000"
 
 echo -e "\nUseful commands:"
-echo -e "  Stop dashboard:  cd tr-dashboard && docker-compose down"
-echo -e "  Update:         cd tr-dashboard && git pull && docker-compose up -d --build"
-echo -e "  Create logs:    cd tr-dashboard && ./install.sh --logs"
+echo -e "  Stop dashboard:  docker-compose down"
+echo -e "  Update:         git pull && docker-compose up -d --build"
+echo -e "  Create logs:    ./install.sh --logs"
 
 # Check for --logs argument
 if [ "$1" == "--logs" ]; then
