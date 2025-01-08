@@ -35,15 +35,14 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/ece2875/install.sh
-   chmod +x install.sh
-   ./install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/0c7361f/install.sh && chmod +x install.sh && ./install.sh
    ```
 2. The installer will:
    - Download and let you configure the .env file
    - Set up the required directories
    - Build and start the Docker containers
    - Verify the installation
+   - Provide improved error handling and validation
 
 3. Access the dashboard at http://localhost:3000 (or your configured port)
 
@@ -74,8 +73,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 
    # Start the system
    docker compose up -d
-   ```
-
+   
 ## Configuration
 
 ### Environment Variables
@@ -83,7 +81,7 @@ Key settings in your .env file:
 
 - `DASHBOARD_PORT`: External port for the dashboard (default: 3000)
 - `SYSTEM_FILTERS`: Your system names and display names (format: shortName|displayName)
-- `RADIOS_FILE`: Path to your radios.csv file (optional)
+- `RADIOS_FILE`: Path to your radios.csv file (optional, not yet implemented) 
 
 Example .env:
 ```bash
@@ -103,12 +101,15 @@ RADIOS_FILE=/path/to/radios.csv
 - Start using the dashboard right away
 - System automatically tracks new talkgroups as they appear
 - Unknown talkgroups are saved to talkgroups.csv
+- Talkgroups can be modified and saved in realtime
+- The system aliases for filtering can be modified in realtime
 
 #### Option 2: Radio Reference Import
 1. Log in to [Radio Reference](https://www.radioreference.com)
 2. Navigate to your P25 system's database page
 3. Download the talkgroup data (CSV format)
 4. Place the file in the data/talkgroups directory as talkgroups.csv
+4b. For multiple systems, use the filname shortname-talkgroups.csv for each system. (untested)
 5. The system will automatically load the data
 
 ### Trunk Recorder Setup
