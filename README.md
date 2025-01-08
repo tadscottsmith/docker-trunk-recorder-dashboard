@@ -34,7 +34,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/6d4a4ab/install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/39732bd/install.sh
    chmod +x install.sh
    ./install.sh
    ```
@@ -140,7 +140,7 @@ The system uses a dedicated initialization script (mongo-init.js) that:
 - Shows detailed progress during initialization
 - Logs all database operations for troubleshooting
 
-The initialization script is mounted into the container and executed automatically during startup, ensuring consistent database configuration across deployments.
+The initialization script is mounted into the container and executed as a one-time operation during installation, ensuring consistent database configuration across deployments. The script runs in a dedicated profile to prevent accidental reinitialization during normal operation.
 
 ## Basic Configuration
 
