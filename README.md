@@ -31,6 +31,70 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 
 ## Quick Installation
 
+### Option 1: One-Click Installer (Recommended)
+1. Download and run the installer:
+   ```bash
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/main/install.sh
+   chmod +x install.sh
+   ./install.sh
+   ```
+2. Access the dashboard at http://localhost:3000
+
+#### Troubleshooting and Bug Reports
+
+The installer performs several pre-flight checks to ensure:
+- Required tools are installed (Docker, Docker Compose, Git, curl, zip)
+- Docker service is running
+- Sufficient disk space is available (minimum 1GB)
+- Network connectivity to GitHub
+- Directory permissions are correct
+- No conflicting installations exist
+
+If any issues are detected:
+1. The installer will display specific error messages
+2. Provide guidance on how to resolve the issue
+3. Automatically generate a diagnostic report if needed
+
+To manually generate a diagnostic report:
+```bash
+cd tr-dashboard
+./install.sh --logs
+```
+
+The diagnostic report includes:
+- Docker logs and container status
+- System information and versions
+- MongoDB diagnostic data
+- Sanitized environment configuration (sensitive data removed)
+- Installation error logs
+- Container health checks
+
+Common Issues and Solutions:
+1. Docker service not running:
+   ```bash
+   sudo systemctl start docker
+   ```
+
+2. Permission errors:
+   - Don't run installer as root/sudo
+   - Ensure current user is in docker group
+   ```bash
+   sudo usermod -aG docker $USER
+   # Log out and back in
+   ```
+
+3. Network connectivity:
+   - Check internet connection
+   - Verify GitHub is accessible
+   - Check firewall settings
+
+4. Disk space issues:
+   - Free up at least 1GB space
+   - Run `docker system prune` to clean old images
+
+Attach the generated ZIP file when reporting issues on GitHub for faster troubleshooting.
+
+### Option 2: Manual Installation
 1. Install Docker on your system:
    - [Docker Desktop for Windows/Mac](https://www.docker.com/products/docker-desktop/)
    - For Linux:
@@ -45,8 +109,8 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 2. Download and start the dashboard:
    ```bash
    # Get the code
-   git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git
-   cd docker-trunk-recorder-dashboard
+   git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git tr-dashboard
+   cd tr-dashboard
 
    # Copy example environment file
    cp .env.example .env
@@ -152,13 +216,85 @@ Each file contains only the talkgroups for that specific P25 system, and the sys
 
 **IMPORTANT**: This dashboard has no built-in authentication or encryption. By default, it accepts connections from any IP address and transmits data in plain text.
 
-For safe operation:
+### Recommended Security Measures
+
+#### Network Security
 - Run the dashboard only on your private network
 - Use firewall rules to restrict access to trusted IPs
 - Never expose the dashboard to the internet without proper security measures
-- Consider using Tailscale for secure remote access
+
+#### Secure Remote Access
+1. Install Tailscale:
+   ```bash
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up
+   ```
+2. Access dashboard via Tailscale IP:
+   ```bash
+   http://<tailscale-ip>:3000
+   ```
+
+#### Reverse Proxy Setup
+1. Install Nginx:
+   ```bash
+   sudo apt install nginx
+   ```
+2. Create proxy configuration:
+   ```bash
+   sudo nano /etc/nginx/sites-available/trunk-dashboard
+   ```
+   ```nginx
+   server {
+       listen 443 ssl;
+       server_name yourdomain.com;
+
+       ssl_certificate /etc/ssl/certs/yourdomain.crt;
+       ssl_certificate_key /etc/ssl/private/yourdomain.key;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+       }
+   }
+   ```
+3. Enable configuration:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/trunk-dashboard /etc/nginx/sites-enabled/
+   sudo systemctl restart nginx
+   ```
+
+#### HTTPS Setup
+1. Obtain SSL certificate:
+   ```bash
+   sudo apt install certbot python3-certbot-nginx
+   sudo certbot --nginx -d yourdomain.com
+   ```
+2. Configure automatic renewal:
+   ```bash
+   sudo certbot renew --dry-run
+   ```
+
+#### Additional Security Recommendations
+- Use a VPN for remote access
+- Implement IP whitelisting
+- Regularly update Docker images
+- Monitor access logs
+- Consider implementing basic authentication
 
 ## Version History
+
+### Version 0.2.2
+- Added comprehensive installation error checking
+- Added automated diagnostic report generation
+- Added system requirement validation
+- Added container health monitoring
+- Improved installation process reliability
+- Enhanced troubleshooting documentation
+- Changed default installation directory
+- Added sanitized log collection
 
 ### Version 0.2.1
 - Added multi-talkgroup metadata system with per-system files
