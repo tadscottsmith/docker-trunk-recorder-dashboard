@@ -15,6 +15,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 - Import talkgroup data from Radio Reference
 - Auto-saves newly discovered talkgroups
 - Automatic updates when talkgroup file changes
+- Compatible with trunk-recorder talkgroup format
 
 ### Historical Data
 - View activity from last 30 minutes to 12 hours
@@ -34,15 +35,118 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/03fc9cd/install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/ece2875/install.sh
    chmod +x install.sh
    ./install.sh
    ```
-2. Access the dashboard at http://localhost:3000
+2. The installer will:
+   - Download and let you configure the .env file
+   - Set up the required directories
+   - Build and start the Docker containers
+   - Verify the installation
 
-[Previous content up to Version History section...]
+3. Access the dashboard at http://localhost:3000 (or your configured port)
+
+### Option 2: Manual Installation
+1. Install Docker on your system:
+   - [Docker Desktop for Windows/Mac](https://www.docker.com/products/docker-desktop/)
+   - For Linux:
+     ```bash
+     sudo apt update
+     sudo apt install docker.io docker-compose
+     sudo systemctl start docker
+     sudo systemctl enable docker
+     sudo usermod -aG docker $USER  # Log out and back in after this
+     ```
+
+2. Download and start the dashboard:
+   ```bash
+   # Get the code
+   git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git
+   cd docker-trunk-recorder-dashboard
+
+   # Copy and edit environment file
+   cp .env.example .env
+   nano .env  # Configure your settings
+
+   # Create data directories
+   mkdir -p data/mongodb data/talkgroups
+
+   # Start the system
+   docker compose up -d
+   ```
+
+## Configuration
+
+### Environment Variables
+Key settings in your .env file:
+
+- `DASHBOARD_PORT`: External port for the dashboard (default: 3000)
+- `SYSTEM_FILTERS`: Your system names and display names (format: shortName|displayName)
+- `RADIOS_FILE`: Path to your radios.csv file (optional)
+
+Example .env:
+```bash
+# Dashboard Configuration
+DASHBOARD_PORT=3000
+
+# System Configuration
+SYSTEM_FILTERS=hamco|Hamilton P25,warco|Warren P25
+
+# Optional: Path to radios file
+RADIOS_FILE=/path/to/radios.csv
+```
+
+### Talkgroup Setup
+
+#### Option 1: Auto-Discovery (Default)
+- Start using the dashboard right away
+- System automatically tracks new talkgroups as they appear
+- Unknown talkgroups are saved to talkgroups.csv
+
+#### Option 2: Radio Reference Import
+1. Log in to [Radio Reference](https://www.radioreference.com)
+2. Navigate to your P25 system's database page
+3. Download the talkgroup data (CSV format)
+4. Place the file in the data/talkgroups directory as talkgroups.csv
+5. The system will automatically load the data
+
+### Trunk Recorder Setup
+
+1. Copy the logging script:
+   ```bash
+   cp remote/log_mongo_http.sh /path/to/trunk-recorder/
+   chmod +x /path/to/trunk-recorder/log_mongo_http.sh
+   ```
+
+2. Add to trunk-recorder's config.json:
+   ```json
+   {
+       "shortName": "your-system-name",
+       "control_channels": [851000000,852000000],
+       "type": "p25",
+       "modulation": "qpsk",
+       "talkgroupsFile": "talkgroups.csv",
+       "unitScript": "./log_mongo_http.sh"
+   }
+   ```
 
 ## Version History
+
+### Version 0.3.2
+- Improved trunk-recorder compatibility
+  - Updated CSV header format to match trunk-recorder
+  - Added default Mode of 'D'
+  - Added configurable external port
+  - Added radios file support
+- Improved installation process
+  - Added environment configuration step
+  - Allow editing .env before installation
+  - Better error handling and progress indicators
+- Updated documentation
+  - Added configuration options
+  - Improved installation instructions
+  - Added trunk-recorder compatibility notes
 
 ### Version 0.3.1
 - Added category filtering with dynamic options

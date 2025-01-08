@@ -99,7 +99,9 @@ The development environment uses Docker Compose with the following features:
 - `MONGODB_URI`: Database connection string
 - `DB_NAME`: Database name
 - `COLLECTION_NAME`: Collection name
+- `DASHBOARD_PORT`: External port for the dashboard (default: 3000)
 - `SYSTEM_FILTERS`: System filter configuration (format: "shortname|Display Name,...")
+- `RADIOS_FILE`: Path to external radios.csv file (optional)
 
 ## Data Storage
 
@@ -114,6 +116,9 @@ The development environment uses Docker Compose with the following features:
 - Contains all talkgroup configuration files
 - Supports multiple system-specific files
 - Hot-reloading enabled for file changes
+- Compatible with trunk-recorder CSV format
+- Headers: Decimal,Hex,Alpha Tag,Mode,Description,Tag,Category
+- Default Mode: 'D' for digital
 
 ### System Aliases
 - Location: `data/system-alias.csv`
@@ -185,6 +190,21 @@ The development environment uses Docker Compose with the following features:
 3. Make your changes
 4. Run tests (when implemented)
 5. Submit a pull request
+
+### Development Guidelines
+- Follow existing code style and formatting
+- Add comments for complex logic
+- Update documentation for new features
+- Test changes with both new and existing data
+- Consider backward compatibility
+- Handle error cases appropriately
+
+### Version Control
+- Use semantic versioning (MAJOR.MINOR.PATCH)
+- Update version in package.json
+- Add version history to README.md
+- Keep development notes in docs/development.md
+- Use descriptive commit messages
 
 ## Troubleshooting Development
 
