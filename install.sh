@@ -80,7 +80,7 @@ check_requirements() {
         errors=$((errors + 1))
     fi
     
-# Check for existing files (skip if updating)
+    # Check for existing files (skip if updating)
     if [ "$1" != "--update" ] && [ "$1" != "--installing" ]; then
         local git_files=(".git" ".gitignore" "package.json" "docker-compose.yml")
         for file in "${git_files[@]}"; do
@@ -310,7 +310,8 @@ echo -e "${GREEN}✓ Services started${NC}"
 get_dashboard_port() {
     local port=3000
     if [ -f ".env" ]; then
-        local env_port=$(grep "^DASHBOARD_PORT=" .env | cut -d '=' -f2)
+        local env_port
+        env_port=$(grep "^DASHBOARD_PORT=" .env | cut -d '=' -f2)
         if [ -n "$env_port" ]; then
             port=$env_port
         fi
