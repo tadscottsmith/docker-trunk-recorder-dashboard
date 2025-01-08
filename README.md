@@ -95,33 +95,39 @@ The dashboard requires trunk-recorder to send events via the logging script. Thi
 
 1. Copy the logging script to your trunk-recorder directory:
    ```bash
-   # Copy files to trunk-recorder directory
+   # Copy script to trunk-recorder directory
    cp remote/log_mongo_http.sh /path/to/trunk-recorder/
-   cp remote/.env.example /path/to/trunk-recorder/.env
 
    # Make script executable
    chmod +x /path/to/trunk-recorder/log_mongo_http.sh
-
-   # Edit settings for local setup
-   nano /path/to/trunk-recorder/.env
-   # Set HTTP_MONGO_HOST=localhost
-   # Set HTTP_MONGO_PORT=3001
    ```
+
+2. Configure script settings:
+   The script uses the following internal variables:
+   - HTTP_HOST: Dashboard host (default: localhost)
+   - HTTP_PORT: Dashboard port (default: 3001)
+   - DEBUG: Enable debug logging (default: false)
+   - CONN_TIMEOUT: Connection timeout in seconds (default: 1)
+
+   You can configure these by either:
+   - Setting environment variables before running trunk-recorder
+   - Editing the script directly to change the default values
 
 ### Remote Setup (Dashboard and Trunk Recorder on different machines)
 
 1. On the trunk-recorder machine:
    ```bash
-   # Copy files to trunk-recorder directory
-   scp remote/* user@trunk-recorder-machine:/path/to/trunk-recorder/
+   # Copy script to trunk-recorder directory
+   scp remote/log_mongo_http.sh user@trunk-recorder-machine:/path/to/trunk-recorder/
 
    # Make script executable
    chmod +x /path/to/trunk-recorder/log_mongo_http.sh
+   ```
 
-   # Edit environment settings
-   nano /path/to/trunk-recorder/.env
-   # Set HTTP_MONGO_HOST to your dashboard machine's IP
-   # Set HTTP_MONGO_PORT=3001
+2. Configure script settings:
+   Set the HTTP_HOST variable to your dashboard machine's IP address:
+   ```bash
+   export HTTP_HOST="your.dashboard.ip"
    ```
 
 ### Configure Trunk Recorder
@@ -142,7 +148,7 @@ Add the logging script to your trunk-recorder's config.json:
 Key points:
 - The `unitScript` path should point to where you copied the logging script
 - Make sure the script is executable (`chmod +x`)
-- The script uses the environment file (.env) in the same directory
+- Configure script settings using environment variables or by editing the script directly
 
 ## Troubleshooting
 
