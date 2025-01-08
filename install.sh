@@ -11,75 +11,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Function to get current branch
-get_current_branch() {
-    # Extract branch from the git clone command in this script
-    grep "git clone.*-b" "$0" | sed -n 's/.*-b \([^ ]*\).*/\1/p'
-}
-
-# Function to check for updates
-check_for_update() {
-    echo -e "${YELLOW}Checking for updates...${NC}"
-    
-    # First try the branch this script was downloaded from
-    local current_branch=$(get_current_branch)
-    if [ -n "$current_branch" ]; then
-        echo -e "${YELLOW}Checking current branch: ${current_branch}${NC}"
-        local latest_commit=$(curl -s "https://api.github.com/repos/LumenPrima/docker-trunk-recorder-dashboard/commits/${current_branch}" | grep -o '"sha": "[^"]*' | cut -d'"' -f4)
-        if [ -n "$latest_commit" ]; then
-            echo -e "${YELLOW}Found version: ${current_branch} (${latest_commit})${NC}"
-            local ref="${current_branch}"
-        fi
-    fi
-    
-    # If no branch found or branch check failed, try latest release
-    if [ -z "$ref" ]; then
-        echo -e "${YELLOW}Checking latest release...${NC}"
-        local latest_release=$(curl -s https://api.github.com/repos/LumenPrima/docker-trunk-recorder-dashboard/releases/latest | grep -o '"tag_name": "[^"]*' | cut -d'"' -f4)
-        if [ -n "$latest_release" ]; then
-            echo -e "${YELLOW}Found version: ${latest_release}${NC}"
-            ref="${latest_release}"
-        fi
-    fi
-    
-    # If no release found, try main branch
-    if [ -z "$ref" ]; then
-        echo -e "${YELLOW}No release found, using main branch${NC}"
-        ref="main"
-    fi
-    
-    # Download the latest version and compare with current
-    local temp_script=$(mktemp)
-    if ! curl -s "https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/${ref}/install.sh" -o "$temp_script"; then
-        echo -e "${RED}Failed to download latest version${NC}"
-        rm -f "$temp_script"
-        return 1
-    fi
-    
-    if ! cmp -s "$0" "$temp_script"; then
-        echo -e "${GREEN}Update available!${NC}"
-        echo -e "${YELLOW}Installing update...${NC}"
-        
-        # Preserve execute permissions
-        local current_perms=$(stat -c %a "$0")
-        
-        # Replace current script with new version
-        cat "$temp_script" > "$0"
-        chmod "$current_perms" "$0"
-        
-        rm -f "$temp_script"
-        
-        echo -e "${GREEN}Update installed successfully!${NC}"
-        echo -e "${YELLOW}Restarting script...${NC}"
-        
-        # Re-execute the updated script with all original arguments
-        exec "$0" "$@"
-    else
-        echo -e "${GREEN}Already running latest version${NC}"
-        rm -f "$temp_script"
-    fi
-}
-
 # Parse command line arguments
 case "$1" in
     --logs)
@@ -99,11 +30,6 @@ case "$1" in
         exit 0
         ;;
 esac
-
-# Check for updates by default unless explicitly installing
-if [ "$1" != "--installing" ]; then
-    check_for_update "--installing"
-fi
 
 # Error handling function
 handle_error() {
