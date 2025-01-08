@@ -111,9 +111,10 @@ check_requirements
 
 # Step 1: Clone repository
 echo -e "${YELLOW}[1/5] Cloning repository...${NC}"
-clone_output=$(git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git tr-dashboard 2>&1)
-verify_command "$clone_output" "Failed to clone repository"
+echo -e "${YELLOW}→ From: https://github.com/LumenPrima/docker-trunk-recorder-dashboard${NC}"
+git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git tr-dashboard
 cd tr-dashboard || exit 1
+echo -e "${GREEN}✓ Repository cloned successfully${NC}"
 
 # Function to gather logs and create bug report
 gather_logs() {
@@ -179,17 +180,30 @@ rm data/mongodb/.write_test
 
 # Step 3: Build Docker images
 echo -e "${YELLOW}[3/5] Building Docker images...${NC}"
-build_output=$(docker-compose build 2>&1)
-verify_command "$build_output" "Failed to build Docker images"
+echo -e "${YELLOW}→ Building dashboard image${NC}"
+docker-compose build dashboard
+echo -e "${YELLOW}→ Building ingest service image${NC}"
+docker-compose build ingest
+echo -e "${GREEN}✓ Docker images built successfully${NC}"
 
 # Step 4: Start services
 echo -e "${YELLOW}[4/5] Starting services...${NC}"
-start_output=$(docker-compose up -d 2>&1)
-verify_command "$start_output" "Failed to start services"
+echo -e "${YELLOW}→ Starting MongoDB${NC}"
+docker-compose up -d mongodb
+sleep 5
+
+echo -e "${YELLOW}→ Starting mongo-init${NC}"
+docker-compose up mongo-init
+echo -e "${YELLOW}→ Waiting for MongoDB initialization...${NC}"
+sleep 5
+
+echo -e "${YELLOW}→ Starting dashboard and ingest services${NC}"
+docker-compose up -d dashboard ingest
+echo -e "${GREEN}✓ Services started${NC}"
 
 # Step 5: Verify installation
 echo -e "${YELLOW}[5/5] Verifying installation...${NC}"
-echo -e "${YELLOW}Waiting for services to start...${NC}"
+echo -e "${YELLOW}→ Checking container status...${NC}"
 
 # Wait for services to be ready (timeout after 30 seconds)
 timeout=30
@@ -203,21 +217,27 @@ while [ $timeout -gt 0 ]; do
 done
 
 if [ $timeout -eq 0 ]; then
-    echo -e "${RED}Services failed to start within 30 seconds${NC}"
-    echo -e "${YELLOW}Collecting logs for troubleshooting...${NC}"
+    echo -e "${RED}✗ Services failed to start within 30 seconds${NC}"
+    echo -e "${YELLOW}→ Collecting logs for troubleshooting...${NC}"
     gather_logs
+    echo -e "${RED}Please check the logs above for errors${NC}"
     exit 1
 fi
 
+echo -e "${GREEN}✓ Services are responding${NC}"
+
 # Verify all required containers are running
-required_containers=("mongodb" "trunk-dashboard")
+echo -e "${YELLOW}→ Verifying container health...${NC}"
+required_containers=("mongodb" "dashboard" "ingest")
 for container in "${required_containers[@]}"; do
     if ! docker ps --format '{{.Names}}' | grep -q "$container"; then
-        echo -e "${RED}Container '$container' is not running${NC}"
-        echo -e "${YELLOW}Collecting logs for troubleshooting...${NC}"
+        echo -e "${RED}✗ Container '$container' is not running${NC}"
+        echo -e "${YELLOW}→ Collecting logs for troubleshooting...${NC}"
         gather_logs
+        echo -e "${RED}Please check the logs above for errors${NC}"
         exit 1
     fi
+    echo -e "${GREEN}✓ Container '$container' is running${NC}"
 done
 
 echo -e "${GREEN}Installation complete!${NC}"
