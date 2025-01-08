@@ -5,6 +5,9 @@ export class FilterManager {
         this.showActiveOnly = false;
         this.currentSort = 'id';
         this.currentSystem = null;
+        this.excludedTalkgroups = new Set();
+        this.currentCategory = null;
+        this.showUnassociated = true;
 
         // Listen for system list updates
         window.socketIo.on('systemsUpdated', () => {
@@ -90,8 +93,33 @@ export class FilterManager {
                 button.addEventListener('click', () => this.setSort(button.dataset.sort));
             });
 
+            // Set up category filter
+            const categorySelect = document.getElementById('categoryFilter');
+            if (categorySelect) {
+                categorySelect.addEventListener('change', (e) => {
+                    this.currentCategory = e.target.value === 'all' ? null : e.target.value;
+                    this.onFilterChange();
+                });
+            }
+
+            // Set up unassociated toggle
+            const unassociatedButton = document.getElementById('unassociatedButton');
+            if (unassociatedButton) {
+                unassociatedButton.addEventListener('click', () => this.toggleUnassociated());
+            }
+
+            // Set up talkgroup exclusion
+            document.addEventListener('contextmenu', (e) => {
+                const talkgroupElement = e.target.closest('.talkgroup');
+                if (talkgroupElement) {
+                    e.preventDefault();
+                    const talkgroupId = talkgroupElement.dataset.talkgroupId;
+                    this.toggleExcludedTalkgroup(talkgroupId);
+                }
+            });
+
         } catch (error) {
-            console.error('Error setting up system filters:', error);
+            console.error('Error setting up filters:', error);
         }
     }
 
@@ -100,6 +128,23 @@ export class FilterManager {
         const button = document.getElementById('filterButton');
         button.classList.toggle('active');
         button.textContent = this.showActiveOnly ? 'Show All' : 'Show Active Only';
+        this.onFilterChange();
+    }
+
+    toggleUnassociated() {
+        this.showUnassociated = !this.showUnassociated;
+        const button = document.getElementById('unassociatedButton');
+        button.classList.toggle('active');
+        button.textContent = this.showUnassociated ? 'Hide Unassociated' : 'Show Unassociated';
+        this.onFilterChange();
+    }
+
+    toggleExcludedTalkgroup(talkgroupId) {
+        if (this.excludedTalkgroups.has(talkgroupId)) {
+            this.excludedTalkgroups.delete(talkgroupId);
+        } else {
+            this.excludedTalkgroups.add(talkgroupId);
+        }
         this.onFilterChange();
     }
 
@@ -115,7 +160,10 @@ export class FilterManager {
     getFilterState() {
         return {
             showActiveOnly: this.showActiveOnly,
-            currentSort: this.currentSort
+            currentSort: this.currentSort,
+            excludedTalkgroups: this.excludedTalkgroups,
+            currentCategory: this.currentCategory,
+            showUnassociated: this.showUnassociated
         };
     }
 }

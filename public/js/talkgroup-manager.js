@@ -94,20 +94,36 @@ export class TalkgroupManager {
         this.shortNameFilter = null;
     }
 
-    getTalkgroupEntries(showActiveOnly = false, sortBy = 'id') {
+    getTalkgroupEntries({ showActiveOnly = false, sortBy = 'id', excludedTalkgroups = new Set(), currentCategory = null, showUnassociated = true }) {
         let entries = Object.entries(this.talkgroups);
         
         // Filter by shortName if set
         if (this.shortNameFilter) {
             entries = entries.filter(([talkgroup]) => {
-                // Look through all events for this talkgroup to find matching shortName
                 const radioStates = this.radioStates[talkgroup];
                 if (!radioStates) return false;
-                
-                // Check if any radio in this talkgroup has the matching shortName
                 return Object.values(radioStates).some(state => 
                     state.shortName === this.shortNameFilter
                 );
+            });
+        }
+        
+        // Filter excluded talkgroups
+        entries = entries.filter(([talkgroup]) => !excludedTalkgroups.has(talkgroup));
+
+        // Filter by category
+        if (currentCategory) {
+            entries = entries.filter(([talkgroup]) => {
+                const metadata = this.metadata[talkgroup];
+                return metadata?.category === currentCategory;
+            });
+        }
+
+        // Filter unassociated talkgroups
+        if (!showUnassociated) {
+            entries = entries.filter(([talkgroup]) => {
+                const metadata = this.metadata[talkgroup];
+                return metadata && Object.keys(metadata).length > 0;
             });
         }
         

@@ -438,6 +438,67 @@ body {
     background: var(--button-active-hover);
 }
 
+/* Category Filter */
+.category-filter {
+    background: var(--button-bg);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-filter:hover {
+    background: var(--button-hover);
+}
+
+.category-filter option {
+    background: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Excluded Talkgroups */
+.talkgroup.excluded {
+    opacity: 0.5;
+    border-style: dashed;
+}
+
+.talkgroup.excluded::before {
+    content: '✕';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    color: var(--text-color);
+    font-size: 1.2em;
+    z-index: 1;
+}
+
+/* Context Menu Hint */
+.talkgroup::after {
+    content: 'Right-click to exclude';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    color: var(--secondary-text);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.talkgroup:hover::after {
+    opacity: 1;
+}
+
 /* Modal Styles */
 .modal {
     display: none;
