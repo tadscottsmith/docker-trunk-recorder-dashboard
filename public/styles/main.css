@@ -477,7 +477,7 @@ body {
 
 /* Context Menu Hint */
 .talkgroup::after {
-    content: 'Right-click to exclude';
+    content: 'Right-click to hide';
     position: absolute;
     bottom: -20px;
     left: 50%;
@@ -497,6 +497,70 @@ body {
 
 .talkgroup:hover::after {
     opacity: 1;
+}
+
+/* Hidden Talkgroups List */
+.hidden-talkgroups-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.hidden-talkgroup-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: var(--bg-color);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.hidden-talkgroup-info {
+    flex-grow: 1;
+}
+
+.hidden-talkgroup-title {
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+.hidden-talkgroup-description {
+    font-size: 0.8em;
+    color: var(--secondary-text);
+}
+
+.unhide-button {
+    background: var(--button-bg);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    color: var(--text-color);
+    margin-left: 10px;
+    transition: all 0.2s ease;
+}
+
+.unhide-button:hover {
+    background: var(--button-hover);
+}
+
+/* Confirmation Dialog */
+.confirmation-dialog {
+    max-width: 400px;
+}
+
+.confirmation-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.confirmation-buttons button {
+    min-width: 80px;
 }
 
 /* Modal Styles */

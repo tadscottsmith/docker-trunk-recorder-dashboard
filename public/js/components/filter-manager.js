@@ -8,6 +8,7 @@ export class FilterManager {
         this.excludedTalkgroups = new Set();
         this.currentCategory = null;
         this.showUnassociated = true;
+        this.pendingExclude = null;
 
         // Listen for system list updates
         window.socketIo.on('systemsUpdated', () => {
@@ -108,15 +109,48 @@ export class FilterManager {
                 unassociatedButton.addEventListener('click', () => this.toggleUnassociated());
             }
 
+            // Set up hidden talkgroups button
+            const hiddenButton = document.getElementById('hiddenTalkgroupsButton');
+            if (hiddenButton) {
+                hiddenButton.addEventListener('click', () => this.showHiddenTalkgroups());
+            }
+
             // Set up talkgroup exclusion
             document.addEventListener('contextmenu', (e) => {
                 const talkgroupElement = e.target.closest('.talkgroup');
                 if (talkgroupElement) {
                     e.preventDefault();
                     const talkgroupId = talkgroupElement.dataset.talkgroupId;
-                    this.toggleExcludedTalkgroup(talkgroupId);
+                    this.confirmHideTalkgroup(talkgroupId);
                 }
             });
+
+            // Set up confirmation dialog
+            const confirmYes = document.getElementById('confirmYes');
+            const confirmNo = document.getElementById('confirmNo');
+            if (confirmYes) {
+                confirmYes.addEventListener('click', () => {
+                    if (this.pendingExclude) {
+                        this.toggleExcludedTalkgroup(this.pendingExclude);
+                        this.pendingExclude = null;
+                    }
+                    document.getElementById('confirmDialog').style.display = 'none';
+                });
+            }
+            if (confirmNo) {
+                confirmNo.addEventListener('click', () => {
+                    this.pendingExclude = null;
+                    document.getElementById('confirmDialog').style.display = 'none';
+                });
+            }
+
+            // Set up hidden talkgroups modal close
+            const closeModal = document.querySelector('#hiddenTalkgroupsModal .close-modal');
+            if (closeModal) {
+                closeModal.addEventListener('click', () => {
+                    document.getElementById('hiddenTalkgroupsModal').style.display = 'none';
+                });
+            }
 
         } catch (error) {
             console.error('Error setting up filters:', error);
@@ -139,13 +173,76 @@ export class FilterManager {
         this.onFilterChange();
     }
 
+    confirmHideTalkgroup(talkgroupId) {
+        const metadata = this.talkgroupManager.getMetadata(talkgroupId);
+        const name = metadata.alphaTag || `Talkgroup ${talkgroupId}`;
+        
+        const dialog = document.getElementById('confirmDialog');
+        const message = document.getElementById('confirmMessage');
+        message.textContent = `Are you sure you want to hide ${name}?`;
+        
+        this.pendingExclude = talkgroupId;
+        dialog.style.display = 'block';
+    }
+
     toggleExcludedTalkgroup(talkgroupId) {
         if (this.excludedTalkgroups.has(talkgroupId)) {
             this.excludedTalkgroups.delete(talkgroupId);
         } else {
             this.excludedTalkgroups.add(talkgroupId);
         }
+        this.updateHiddenCount();
         this.onFilterChange();
+    }
+
+    updateHiddenCount() {
+        const button = document.getElementById('hiddenTalkgroupsButton');
+        if (button) {
+            button.textContent = `Hidden Talkgroups (${this.excludedTalkgroups.size})`;
+        }
+    }
+
+    showHiddenTalkgroups() {
+        const modal = document.getElementById('hiddenTalkgroupsModal');
+        const list = document.getElementById('hiddenTalkgroupsList');
+        list.innerHTML = '';
+
+        if (this.excludedTalkgroups.size === 0) {
+            list.innerHTML = '<div class="hidden-talkgroup-item">No hidden talkgroups</div>';
+            modal.style.display = 'block';
+            return;
+        }
+
+        this.excludedTalkgroups.forEach(talkgroupId => {
+            const metadata = this.talkgroupManager.getMetadata(talkgroupId);
+            const item = document.createElement('div');
+            item.className = 'hidden-talkgroup-item';
+            
+            const info = document.createElement('div');
+            info.className = 'hidden-talkgroup-info';
+            info.innerHTML = `
+                <div class="hidden-talkgroup-title">${metadata.alphaTag || `Talkgroup ${talkgroupId}`}</div>
+                <div class="hidden-talkgroup-description">${metadata.description || 'No description'}</div>
+            `;
+
+            const unhideButton = document.createElement('button');
+            unhideButton.className = 'unhide-button';
+            unhideButton.textContent = 'Unhide';
+            unhideButton.onclick = () => {
+                this.toggleExcludedTalkgroup(talkgroupId);
+                if (this.excludedTalkgroups.size === 0) {
+                    modal.style.display = 'none';
+                } else {
+                    item.remove();
+                }
+            };
+
+            item.appendChild(info);
+            item.appendChild(unhideButton);
+            list.appendChild(item);
+        });
+
+        modal.style.display = 'block';
     }
 
     setSort(sortBy) {
