@@ -3,6 +3,7 @@
 # One-click installer for Trunk Recorder Dashboard
 # Version: 1.2
 # Author: Cline
+# Repository: https://github.com/LumenPrima/docker-trunk-recorder-dashboard
 
 # Colors for output
 RED='\033[0;31m'
@@ -366,8 +367,70 @@ echo -e "  Stop dashboard:  docker-compose down"
 echo -e "  Update:         git pull && docker-compose up -d --build"
 echo -e "  Create logs:    ./install.sh --logs"
 
-# Check for --logs argument
-if [ "$1" == "--logs" ]; then
-    gather_logs
-    exit 0
+# Function to check for updates
+check_for_update() {
+    echo -e "${YELLOW}Checking for updates...${NC}"
+    
+    # Get the latest commit hash from the remote repository
+    local latest_commit=$(curl -s https://api.github.com/repos/LumenPrima/docker-trunk-recorder-dashboard/commits/feature/improved-filtering | grep -o '"sha": "[^"]*' | cut -d'"' -f4)
+    if [ -z "$latest_commit" ]; then
+        echo -e "${RED}Failed to check for updates${NC}"
+        return 1
+    }
+    
+    # Download the latest version and compare with current
+    local temp_script=$(mktemp)
+    if ! curl -s "https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/${latest_commit}/install.sh" -o "$temp_script"; then
+        echo -e "${RED}Failed to download latest version${NC}"
+        rm -f "$temp_script"
+        return 1
+    }
+    
+    if ! cmp -s "$0" "$temp_script"; then
+        echo -e "${GREEN}Update available!${NC}"
+        echo -e "${YELLOW}Installing update...${NC}"
+        
+        # Preserve execute permissions
+        local current_perms=$(stat -c %a "$0")
+        
+        # Replace current script with new version
+        cat "$temp_script" > "$0"
+        chmod "$current_perms" "$0"
+        
+        rm -f "$temp_script"
+        
+        echo -e "${GREEN}Update installed successfully!${NC}"
+        echo -e "${YELLOW}Restarting script...${NC}"
+        
+        # Re-execute the updated script with all original arguments
+        exec "$0" "$@"
+    else
+        echo -e "${GREEN}Already running latest version${NC}"
+        rm -f "$temp_script"
+    fi
+}
+
+# Parse command line arguments
+case "$1" in
+    --logs)
+        gather_logs
+        exit 0
+        ;;
+    --update)
+        check_for_update "$@"
+        exit 0
+        ;;
+    --help)
+        echo "Usage: $0 [OPTION]"
+        echo "Options:"
+        echo "  --logs    Generate bug report logs"
+        echo "  --update  Check for and install updates"
+        echo "  --help    Display this help message"
+        exit 0
+        ;;
+esac
+
+# Check for updates by default unless explicitly installing
+if [ "$1" != "--installing" ]; then
+    check_for_update "--installing"
 fi
