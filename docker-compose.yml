@@ -14,7 +14,7 @@ services:
     networks:
       - trunk_network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "'db.runCommand(\"ping\").ok'"]
+      test: test -e /data/db/mongod.lock
       interval: 10s
       timeout: 5s
       retries: 5
@@ -83,37 +83,18 @@ services:
     image: mongo:latest
     restart: "no"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     command: >
-      bash -c "
-        echo 'Waiting for MongoDB to start...' &&
-        until mongosh --host mongodb:27017 --eval 'db.runCommand(\"ping\").ok' >/dev/null 2>&1; do
-          echo 'Waiting for MongoDB to be ready...'
-          sleep 2
-        done &&
-        echo 'MongoDB is ready, initializing replica set...' &&
-        mongosh --host mongodb:27017 --eval '
-          config = {
-            _id: \"rs0\",
-            members: [
-              { _id: 0, host: \"mongodb:27017\", priority: 1 }
-            ],
-            settings: {
-              chainingAllowed: true,
-              heartbeatTimeoutSecs: 10,
-              electionTimeoutMillis: 10000,
-              catchUpTimeoutMillis: -1
-            }
-          };
-          rs.initiate(config);
-        ' &&
-        echo 'Waiting for replica set to be ready...' &&
-        until mongosh --host mongodb:27017 --eval 'rs.status().ok && rs.status().members.length > 0 && rs.status().members[0].stateStr === \"PRIMARY\"' >/dev/null 2>&1; do
-          echo 'Waiting for replica set to be ready...'
-          sleep 2
-        done &&
-        echo 'Replica set is ready and PRIMARY'
-      "
+      mongosh --host mongodb:27017 --eval '
+        config = {
+          _id: "rs0",
+          members: [
+            { _id: 0, host: "mongodb:27017", priority: 1 }
+          ]
+        };
+        rs.initiate(config);
+      '
     networks:
       - trunk_network
 
