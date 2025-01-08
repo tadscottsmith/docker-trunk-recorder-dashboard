@@ -285,12 +285,20 @@ docker-compose up -d mongodb
 sleep 5
 
 echo -e "${YELLOW}→ Initializing MongoDB${NC}"
-docker-compose --profile init up mongo-init
-if [ $? -ne 0 ]; then
-    echo -e "${RED}MongoDB initialization failed${NC}"
-    echo -e "${YELLOW}→ Collecting logs for troubleshooting...${NC}"
-    gather_logs
-    exit 1
+# Run mongo-init and capture output
+mongo_init_output=$(docker-compose --profile init up mongo-init 2>&1)
+mongo_init_status=$?
+
+# Check if it's an "already initialized" message or a real error
+if [ $mongo_init_status -ne 0 ]; then
+    if echo "$mongo_init_output" | grep -q "already initialized"; then
+        echo -e "${YELLOW}MongoDB already initialized, continuing...${NC}"
+    else
+        echo -e "${RED}MongoDB initialization failed${NC}"
+        echo -e "${YELLOW}→ Collecting logs for troubleshooting...${NC}"
+        gather_logs
+        exit 1
+    fi
 fi
 echo -e "${GREEN}✓ MongoDB initialized${NC}"
 
@@ -300,12 +308,14 @@ echo -e "${GREEN}✓ Services started${NC}"
 
 # Get dashboard port from .env
 get_dashboard_port() {
+    local port=3000
     if [ -f ".env" ]; then
-        DASHBOARD_PORT=$(grep "^DASHBOARD_PORT=" .env | cut -d '=' -f2)
+        local env_port=$(grep "^DASHBOARD_PORT=" .env | cut -d '=' -f2)
+        if [ -n "$env_port" ]; then
+            port=$env_port
+        fi
     fi
-    # Default to 3000 if not set
-    DASHBOARD_PORT=${DASHBOARD_PORT:-3000}
-    echo "$DASHBOARD_PORT"
+    echo "$port"
 }
 
 # Step 6: Verify installation
