@@ -138,21 +138,25 @@ export class TalkgroupManager {
         // Sort entries based on selected method
         switch (sortBy) {
             case 'calls':
-                entries.sort(([a], [b]) => 
-                    (this.callStats[b]?.count || 0) - (this.callStats[a]?.count || 0)
-                );
+                entries.sort(([a], [b]) => {
+                    const countA = this.callStats[a]?.count || 0;
+                    const countB = this.callStats[b]?.count || 0;
+                    return countB - countA || parseInt(a) - parseInt(b);
+                });
                 break;
             case 'recent':
                 entries.sort(([a], [b]) => {
-                    const timeA = this.timestamps[a] ? new Date(this.timestamps[a]) : new Date(0);
-                    const timeB = this.timestamps[b] ? new Date(this.timestamps[b]) : new Date(0);
-                    return timeB - timeA;
+                    const timeA = this.timestamps[a] ? new Date(this.timestamps[a]).getTime() : 0;
+                    const timeB = this.timestamps[b] ? new Date(this.timestamps[b]).getTime() : 0;
+                    return timeB - timeA || parseInt(a) - parseInt(b);
                 });
                 break;
             case 'frequency':
-                entries.sort(([a], [b]) => 
-                    parseFloat(this.calculateFrequency(b)) - parseFloat(this.calculateFrequency(a))
-                );
+                entries.sort(([a], [b]) => {
+                    const freqA = parseFloat(this.calculateFrequency(a)) || 0;
+                    const freqB = parseFloat(this.calculateFrequency(b)) || 0;
+                    return freqB - freqA || parseInt(a) - parseInt(b);
+                });
                 break;
             case 'id':
             default:
