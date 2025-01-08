@@ -7,6 +7,7 @@ export class TalkgroupManager {
         this.glowStates = {};
         this.callStats = {};
         this.shortNameFilter = null;
+        this.encounteredSystems = new Set();
     }
 
     setMetadata(metadata) {
@@ -27,6 +28,11 @@ export class TalkgroupManager {
     handleEvent(event) {
         const talkgroup = event.talkgroupOrSource;
         const radioId = event.radioID;
+        const system = event.shortName;
+
+        if (system) {
+            this.encounteredSystems.add(system);
+        }
 
         if (!this.talkgroups[talkgroup]) {
             this.talkgroups[talkgroup] = new Set();
