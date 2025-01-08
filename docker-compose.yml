@@ -14,11 +14,11 @@ services:
     networks:
       - trunk_network
     healthcheck:
-      test: test -e /data/db/mongod.lock
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
-    user: "${UID:-1000}:${GID:-1000}"
+      start_period: 40s
 
   dashboard:
     build:
@@ -40,7 +40,6 @@ services:
       - NODE_ENV=development
       - UID=${UID:-1000}
       - GID=${GID:-1000}
-    user: "${UID:-1000}:${GID:-1000}"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -52,8 +51,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
 
   ingest:
     build:
@@ -81,8 +80,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3001"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
 
   # Initialize MongoDB Replica Set
   mongo-init:
@@ -92,15 +91,19 @@ services:
       mongodb:
         condition: service_healthy
     command: >
-      mongosh --host mongodb:27017 --eval '
-        config = {
-          _id: "rs0",
-          members: [
-            { _id: 0, host: "mongodb:27017", priority: 1 }
-          ]
-        };
-        rs.initiate(config);
-      '
+      bash -c "
+        echo 'Waiting for MongoDB to start...' &&
+        sleep 5 &&
+        mongosh --host mongodb:27017 --eval '
+          config = {
+            _id: \"rs0\",
+            members: [
+              { _id: 0, host: \"mongodb:27017\", priority: 1 }
+            ]
+          };
+          rs.initiate(config);
+        '
+      "
     networks:
       - trunk_network
 
