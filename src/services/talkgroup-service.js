@@ -22,16 +22,28 @@ class TalkgroupService {
         // Initialize systems from environment variable
         const systemFilters = process.env.SYSTEM_FILTERS;
         if (systemFilters) {
+            console.log('Initializing systems from SYSTEM_FILTERS:', systemFilters);
             const systems = systemFilters.split(',');
             for (const filter of systems) {
                 const [shortName, displayName] = filter.split('|');
                 if (shortName) {
+                    // First try to add the system (this won't overwrite existing aliases)
                     await this.addSystem(shortName);
+                    
+                    // Only update alias if explicitly provided and different from current
                     if (displayName) {
-                        await systemAliasService.updateAlias(shortName, displayName);
+                        const currentAlias = systemAliasService.getAlias(shortName);
+                        if (currentAlias !== displayName) {
+                            console.log(`Updating system ${shortName} alias: ${currentAlias} -> ${displayName}`);
+                            await systemAliasService.updateAlias(shortName, displayName);
+                        } else {
+                            console.log(`System ${shortName} alias unchanged: ${currentAlias}`);
+                        }
                     }
                 }
             }
+        } else {
+            console.log('No SYSTEM_FILTERS environment variable found');
         }
     }
 
@@ -46,7 +58,9 @@ class TalkgroupService {
     // Add a new system to known systems
     async addSystem(shortName) {
         if (shortName && !this.knownSystems.has(shortName)) {
+            console.log(`Adding new system to known systems: ${shortName}`);
             this.knownSystems.add(shortName);
+            // This will only add to alias file if it doesn't exist
             await systemAliasService.addSystem(shortName);
             return true;
         }
@@ -221,16 +235,19 @@ class TalkgroupService {
         this.unknownTalkgroups.delete(decimal);
     }
 
-    handleNewTalkgroup(talkgroupId, systemShortName) {
+    async handleNewTalkgroup(talkgroupId, systemShortName) {
         let changed = false;
 
         if (talkgroupId && !this.talkgroupsMap.has(talkgroupId)) {
+            console.log(`Adding new unknown talkgroup: ${talkgroupId}`);
             this.unknownTalkgroups.add(talkgroupId);
             changed = true;
         }
 
         if (systemShortName) {
-            const systemAdded = this.addSystem(systemShortName);
+            console.log(`Handling new system from talkgroup: ${systemShortName}`);
+            // This will only add to alias file if it doesn't exist
+            const systemAdded = await this.addSystem(systemShortName);
             changed = changed || systemAdded;
         }
 

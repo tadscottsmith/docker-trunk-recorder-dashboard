@@ -109,20 +109,28 @@ class SystemAliasService {
     }
 
     async addSystem(shortName) {
+        // Only add if system doesn't exist in the alias map
         if (!this.aliasMap.has(shortName)) {
+            console.log(`Adding new system ${shortName} with generated alias`);
             const defaultAlias = this.generateDefaultAlias(shortName);
             this.aliasMap.set(shortName, defaultAlias);
             await this.saveAliases();
             return true;
         }
+        console.log(`System ${shortName} already exists with alias: ${this.aliasMap.get(shortName)}`);
         return false;
     }
 
     async updateAlias(shortName, alias) {
         if (alias && alias.trim()) {
-            this.aliasMap.set(shortName, alias.trim());
-            await this.saveAliases();
-            return true;
+            const existingAlias = this.aliasMap.get(shortName);
+            if (existingAlias !== alias.trim()) {
+                console.log(`Updating alias for ${shortName}: ${existingAlias} -> ${alias.trim()}`);
+                this.aliasMap.set(shortName, alias.trim());
+                await this.saveAliases();
+                return true;
+            }
+            console.log(`Alias for ${shortName} unchanged: ${existingAlias}`);
         }
         return false;
     }
