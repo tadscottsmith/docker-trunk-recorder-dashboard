@@ -110,9 +110,9 @@ services:
           db = db.getSiblingDB(\"trunk_recorder\");
           
           // Create collections with validators
-          db.createCollection(\"radio_events\", {
+          const validator = {
             validator: {
-              '$jsonSchema': {
+              $jsonSchema: {
                 bsonType: \"object\",
                 required: [\"type\", \"timestamp\"],
                 properties: {
@@ -121,7 +121,21 @@ services:
                 }
               }
             }
-          });
+          };
+          
+          // Create collection if it doesn't exist
+          try {
+            db.createCollection(\"radio_events\", validator);
+          } catch (e) {
+            if (e.codeName === 'NamespaceExists') {
+              db.runCommand({
+                collMod: \"radio_events\",
+                validator: validator.validator
+              });
+            } else {
+              throw e;
+            }
+          }
           
           // Create indexes
           db.radio_events.createIndex({ timestamp: -1 });
