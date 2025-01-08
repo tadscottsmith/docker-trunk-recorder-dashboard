@@ -34,7 +34,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/777ef0f/install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/1248a1b/install.sh
    chmod +x install.sh
    ./install.sh
    ```
@@ -131,10 +131,12 @@ Attach the generated tar.gz archive when reporting issues on GitHub for faster t
 ### MongoDB Setup
 The system automatically:
 - Initializes MongoDB with replica set configuration
-- Creates required collections with proper validation
+- Creates required collections with schema validation
+- Handles existing collections gracefully
 - Sets up indexes for optimal query performance
 - Configures diagnostic data collection to minimize warnings
 - Validates data structure on insertion
+- Provides error handling for initialization issues
 
 ## Basic Configuration
 
