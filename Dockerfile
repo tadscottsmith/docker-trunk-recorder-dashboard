@@ -24,7 +24,8 @@ RUN mkdir -p \
     data/mongodb \
     data/talkgroups \
     && touch data/system-alias.csv \
-    && chown -R node:node data/
+    && chown -R node:node /app \
+    && chmod -R 755 data/
 
 # Switch to non-root user
 USER node
