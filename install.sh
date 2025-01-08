@@ -168,15 +168,22 @@ fi
 cp .env.example .env
 verify_command "$?" "Failed to create .env file"
 
+# Create and setup data directories
+echo -e "${YELLOW}→ Creating data directories${NC}"
 mkdir -p data/mongodb data/talkgroups
 verify_command "$?" "Failed to create data directories"
 
-# Verify write permissions
-if ! touch data/mongodb/.write_test 2>/dev/null; then
-    echo -e "${RED}No write permission in data/mongodb directory${NC}"
-    exit 1
-fi
-rm data/mongodb/.write_test
+# Create system alias file
+echo -e "${YELLOW}→ Creating system alias file${NC}"
+touch data/system-alias.csv
+verify_command "$?" "Failed to create system alias file"
+
+# Set proper permissions
+echo -e "${YELLOW}→ Setting directory permissions${NC}"
+chmod -R 777 data
+verify_command "$?" "Failed to set directory permissions"
+
+echo -e "${GREEN}✓ Data directories setup complete${NC}"
 
 # Step 3: Build Docker images
 echo -e "${YELLOW}[3/5] Building Docker images...${NC}"
