@@ -17,38 +17,13 @@ while (!rs.isMaster().ismaster) {
 // Switch to trunk_recorder database
 db = db.getSiblingDB("trunk_recorder");
 
-// Define collection schema
-const validator = {
-  validator: {
-    $jsonSchema: {
-      bsonType: "object",
-      required: ["shortName", "radioID", "eventType", "timestamp"],
-      properties: {
-        shortName: { bsonType: "string" },
-        radioID: { bsonType: "string" },
-        eventType: { bsonType: "string" },
-        timestamp: { bsonType: "string" },
-        talkgroupOrSource: { bsonType: ["string", "null"] },
-        patchedTalkgroups: { 
-          bsonType: ["array", "null"],
-          items: { bsonType: "string" }
-        }
-      }
-    }
-  }
-};
-
-// Create or update collection schema
+// Create collection without validation for maximum flexibility
 try {
-  db.createCollection("radio_events", validator);
-  print("Created radio_events collection with schema validation");
+  db.createCollection("radio_events");
+  print("Created radio_events collection");
 } catch (e) {
   if (e.codeName === "NamespaceExists") {
-    db.runCommand({
-      collMod: "radio_events",
-      validator: validator.validator
-    });
-    print("Updated radio_events collection schema");
+    print("Collection radio_events already exists");
   } else {
     print("Error: " + e);
     throw e;
