@@ -43,14 +43,16 @@ trap 'handle_error ${LINENO}' ERR
 check_requirements() {
     local errors=0
     
-    # Check if running with sufficient privileges
-    if [ "$EUID" -eq 0 ]; then
+    # Check if running in LXC container
+    if [ -f /proc/1/environ ] && grep -q "container=lxc" /proc/1/environ; then
+        echo -e "${YELLOW}Running in LXC container, skipping root user check${NC}"
+    elif [ "$EUID" -eq 0 ]; then
         echo -e "${RED}Please do not run this script as root/sudo${NC}"
         errors=$((errors + 1))
     fi
     
     # Check for required commands
-    for cmd in docker docker-compose curl git zip; do
+    for cmd in docker docker-compose curl git; do
         if ! command -v $cmd &> /dev/null; then
             echo -e "${RED}${cmd} could not be found. Please install ${cmd} first.${NC}"
             errors=$((errors + 1))
@@ -145,12 +147,12 @@ gather_logs() {
         grep -v "PASSWORD\|KEY\|SECRET\|TOKEN" .env > "${log_dir}/env_sanitized.log"
     fi
     
-    # Package everything into a zip file
+    # Package everything into a tar archive
     echo -e "${YELLOW}Creating bug report archive...${NC}"
-    zip -r "tr_dashboard_bug_report_${timestamp}.zip" "${log_dir}" > /dev/null 2>&1
+    tar -czf "tr_dashboard_bug_report_${timestamp}.tar.gz" "${log_dir}" 2>/dev/null
     rm -rf "${log_dir}"
     
-    echo -e "${GREEN}Bug report created: tr_dashboard_bug_report_${timestamp}.zip${NC}"
+    echo -e "${GREEN}Bug report created: tr_dashboard_bug_report_${timestamp}.tar.gz${NC}"
     echo -e "Please attach this file when reporting issues on GitHub"
 }
 

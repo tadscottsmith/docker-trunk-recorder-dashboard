@@ -43,7 +43,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 #### Troubleshooting and Bug Reports
 
 The installer performs several pre-flight checks to ensure:
-- Required tools are installed (Docker, Docker Compose, Git, curl, zip)
+- Required tools are installed (Docker, Docker Compose, Git, curl)
 - Docker service is running
 - Sufficient disk space is available (minimum 1GB)
 - Network connectivity to GitHub
@@ -69,6 +69,8 @@ The diagnostic report includes:
 - Installation error logs
 - Container health checks
 
+The report is packaged as a tar.gz archive for maximum compatibility across systems.
+
 Common Issues and Solutions:
 1. Docker service not running:
    ```bash
@@ -92,7 +94,7 @@ Common Issues and Solutions:
    - Free up at least 1GB space
    - Run `docker system prune` to clean old images
 
-Attach the generated ZIP file when reporting issues on GitHub for faster troubleshooting.
+Attach the generated tar.gz archive when reporting issues on GitHub for faster troubleshooting.
 
 ### Option 2: Manual Installation
 1. Install Docker on your system:
