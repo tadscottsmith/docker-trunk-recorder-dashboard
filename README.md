@@ -51,126 +51,104 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
    # Copy example environment file
    cp .env.example .env
 
+   # Create data directories
+   mkdir -p data/mongodb data/talkgroups
+
    # Start the system
    docker compose up -d
    ```
 
 3. Access the dashboard at http://localhost:3000
 
-## Talkgroup Setup
+## Basic Configuration
 
-### Option 1: Auto-Discovery (Default)
+### Talkgroup Setup
+
+#### Option 1: Auto-Discovery (Default)
 - Start using the dashboard right away
 - System automatically tracks new talkgroups as they appear
 - Unknown talkgroups are saved to talkgroups.csv
 
-### Option 2: Radio Reference Import
+#### Option 2: Radio Reference Import
 1. Log in to [Radio Reference](https://www.radioreference.com)
-2. Navigate to your radio system's database page
+2. Navigate to your P25 system's database page
 3. Download the talkgroup data (CSV format)
-4. Place the file in the examples/ directory as talkgroups.csv
+4. Place the file in the data/talkgroups directory as talkgroups.csv
 5. The system will automatically load the data
 
-### Talkgroup Updates
-- Edit talkgroups.csv directly - changes are detected automatically
-- View talkgroup details by clicking on any entry in the list
-- New talkgroups are automatically discovered and added to the list
-- Update via API endpoint (for programmatic updates):
-  ```bash
-  curl -X POST http://localhost:3000/api/talkgroups/1001 \
-    -H "Content-Type: application/json" \
-    -d '{
-      "alphaTag": "DISP-1",
-      "description": "Primary Dispatch",
-      "tag": "Dispatch",
-      "category": "Public Safety"
-    }'
-  ```
+### Trunk Recorder Setup
 
-## Trunk Recorder Configuration
-
-The dashboard requires trunk-recorder to send events via the logging script. This setup is needed for both local and remote installations.
-
-### Local Setup (Dashboard and Trunk Recorder on same machine)
-
-1. Copy the logging script to your trunk-recorder directory:
+1. Copy the logging script:
    ```bash
-   # Copy script to trunk-recorder directory
    cp remote/log_mongo_http.sh /path/to/trunk-recorder/
-
-   # Make script executable
    chmod +x /path/to/trunk-recorder/log_mongo_http.sh
    ```
 
-2. Configure script settings:
-   The script uses the following internal variables:
-   - HTTP_HOST: Dashboard host (default: localhost)
-   - HTTP_PORT: Dashboard port (default: 3001)
-   - DEBUG: Enable debug logging (default: false)
-   - CONN_TIMEOUT: Connection timeout in seconds (default: 1)
-
-   You can configure these by either:
-   - Setting environment variables before running trunk-recorder
-   - Editing the script directly to change the default values
-
-### Remote Setup (Dashboard and Trunk Recorder on different machines)
-
-1. On the trunk-recorder machine:
-   ```bash
-   # Copy script to trunk-recorder directory
-   scp remote/log_mongo_http.sh user@trunk-recorder-machine:/path/to/trunk-recorder/
-
-   # Make script executable
-   chmod +x /path/to/trunk-recorder/log_mongo_http.sh
+2. Add to trunk-recorder's config.json:
+   ```json
+   {
+       "shortName": "your-system-name",
+       "control_channels": [851000000,852000000],
+       "type": "p25",
+       "modulation": "qpsk",
+       "talkgroupsFile": "talkgroups.csv",
+       "unitScript": "./log_mongo_http.sh"
+   }
    ```
 
-2. Configure script settings:
-   Set the HTTP_HOST variable to your dashboard machine's IP address:
-   ```bash
-   export HTTP_HOST="your.dashboard.ip"
+## Multiple Systems Support
+
+The dashboard supports monitoring multiple P25 systems simultaneously:
+
+1. Create system-specific talkgroup files:
+   ```
+   data/talkgroups/
+   ├── talkgroups.csv          # Default talkgroups
+   └── [system]-talkgroups.csv # System-specific talkgroups
    ```
 
-### Configure Trunk Recorder
+2. The system automatically:
+   - Detects new P25 systems as they appear
+   - Creates system-specific talkgroup files
+   - Updates the system filter list in real-time
+   - Routes events to appropriate talkgroup files
+   - Saves unknown talkgroups to their system file
 
-Add the logging script to your trunk-recorder's config.json:
+The system filter list is dynamically populated based on active systems:
+- New systems are automatically added when detected
+- Each system gets its own filter button with a friendly name
+- System names are managed through aliases in data/system-alias.csv
+- Filter list updates in real-time as new systems are discovered
 
-```json
-{
-    "shortName": "your-system-name",
-    "control_channels": [851000000,852000000],
-    "type": "p25",
-    "modulation": "qpsk",
-    "talkgroupsFile": "talkgroups.csv",
-    "unitScript": "./log_mongo_http.sh"
-}
+### System Aliases
+The dashboard uses a simple CSV file to map system shortnames to friendly display names:
+
+1. File location: `data/system-alias.csv`
+2. Format:
+   ```
+   shortName,alias
+   butco,Butler
+   warco,Warren
+   hamco,Hamilton
+   ```
+3. Features:
+   - Automatically adds new systems with generated aliases
+   - Aliases can be customized by editing the CSV file
+   - Changes are detected and applied immediately
+   - Default aliases are generated from shortnames (e.g., "butco" → "Butler")
+
+For example, if you're monitoring multiple P25 systems:
+```
+data/talkgroups/
+├── talkgroups.csv          # Default talkgroups
+├── hamco-talkgroups.csv    # Hamilton County P25
+├── warco-talkgroups.csv    # Warren County P25
+└── butco-talkgroups.csv    # Butler County P25
 ```
 
-Key points:
-- The `unitScript` path should point to where you copied the logging script
-- Make sure the script is executable (`chmod +x`)
-- Configure script settings using environment variables or by editing the script directly
+Each file contains only the talkgroups for that specific P25 system, and the system filter list will automatically update to show these systems as they become active.
 
-## Troubleshooting
-
-### No Data Appearing
-- Check if trunk-recorder is sending events
-- Verify the dashboard IP/port settings
-- Look for connection errors in browser console
-
-### Missing Talkgroup Information
-- Verify talkgroups.csv exists in examples/ directory
-- Check file format matches Radio Reference export
-- Try reloading through the web interface
-
-### Connection Issues
-- Ensure ports 3000/3001 are accessible
-- Check firewall settings
-- Verify Docker containers are running:
-  ```bash
-  docker compose ps
-  ```
-
-## ⚠️ Security Warning
+## Security Warning ⚠️
 
 **IMPORTANT**: This dashboard has no built-in authentication or encryption. By default, it accepts connections from any IP address and transmits data in plain text.
 
@@ -180,48 +158,37 @@ For safe operation:
 - Never expose the dashboard to the internet without proper security measures
 - Consider using Tailscale for secure remote access
 
-If you need public access, you must implement additional security:
-- Set up a reverse proxy with HTTPS
-- Add authentication
-- Configure proper firewall rules
-- Understand and accept the security implications
+## Version History
 
-## Updating
-
-### Version 0.1.3 Changes
+### Version 0.1.3
 - Removed external dependencies from log_mongo_http.sh
-- Improved error handling and logging in the script
+- Improved error handling and logging
 - Added input validation for environment variables
 - Script now uses built-in tools instead of external utilities
+- Reorganized project structure for better maintainability
+- Added development environment with hot reloading
+- Moved MongoDB data under project data directory
+- Updated terminology to better reflect P25 systems
 
-To update to the latest version:
+### Version 0.1.2
+- Added multi-system talkgroup support
+- Improved file watching and reloading
+- Added dark/light theme support
+- Enhanced error handling
 
-1. Stop the current instance:
-   ```bash
-   cd /path/to/docker-trunk-recorder-dashboard
-   docker compose down
-   ```
+### Version 0.1.1
+- Added historical data viewing
+- Improved real-time updates
+- Added sorting and filtering options
+- Enhanced UI responsiveness
 
-2. Pull the latest code:
-   ```bash
-   git pull origin main
-   ```
+### Version 0.1.0
+- Initial release
+- Basic radio monitoring
+- Talkgroup management
+- Real-time updates
 
-3. Rebuild and restart all services:
-   ```bash
-   docker compose build
-   docker compose up -d
-   ```
+## Documentation
 
-4. Verify the update:
-   - Check the version number in the dashboard UI
-   - Look for any new features or fixes in the commit history
-
-## Need Help?
-
-- Check the [Issues](https://github.com/yourusername/docker-trunk-recorder-dashboard/issues) page
-- Submit detailed bug reports with:
-  * What you were doing
-  * What you expected
-  * What happened instead
-  * Any error messages
+- [Development Guide](docs/development.md): Project structure, setup, and technical details
+- [Issues](https://github.com/yourusername/docker-trunk-recorder-dashboard/issues): Bug reports and feature requests

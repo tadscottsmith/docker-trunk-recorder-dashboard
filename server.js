@@ -40,11 +40,25 @@ const COLLECTION_NAME = process.env.COLLECTION_NAME || 'radio_events';
 // Initialize talkgroup data
 const talkgroupsMap = new Map();
 const unknownTalkgroups = new Set();
-let talkgroupFile = process.env.TALKGROUP_FILE || 'talkgroups.csv';
+const talkgroupFiles = new Map(); // Maps system shortNames to their talkgroup files
 
-// Function to save talkgroup data
-async function saveTalkgroups() {
-    if (!talkgroupFile) return;
+// Function to get talkgroup file path for a system
+function getTalkgroupFile(shortName) {
+    const talkgroupsDir = path.join('data', 'talkgroups');
+    if (!shortName) return path.join(talkgroupsDir, 'talkgroups.csv');
+    
+    const systemFile = path.join(talkgroupsDir, `${shortName}-talkgroups.csv`);
+    return fs.existsSync(systemFile) ? systemFile : path.join(talkgroupsDir, 'talkgroups.csv');
+}
+
+// Function to save talkgroup data for a specific system
+async function saveTalkgroups(shortName) {
+    const talkgroupFile = getTalkgroupFile(shortName);
+    const systemTalkgroups = new Map(
+        [...talkgroupsMap.entries()].filter(([decimal, data]) => 
+            data.shortName === shortName || (!data.shortName && !shortName)
+        )
+    );
 
     try {
         // Prepare CSV content
@@ -52,7 +66,7 @@ async function saveTalkgroups() {
         const lines = [];
 
         // Add known talkgroups
-        for (const [decimal, data] of talkgroupsMap.entries()) {
+        for (const [decimal, data] of systemTalkgroups.entries()) {
             const line = [
                 decimal,
                 data.hex || '',
@@ -67,7 +81,7 @@ async function saveTalkgroups() {
 
         // Add unknown talkgroups
         for (const decimal of unknownTalkgroups) {
-            if (!talkgroupsMap.has(decimal)) {
+            if (!systemTalkgroups.has(decimal)) {
                 const line = [
                     decimal,
                     '',
@@ -90,11 +104,31 @@ async function saveTalkgroups() {
     }
 }
 
-// Load talkgroup data
-try {
-    if (fs.existsSync(talkgroupFile)) {
-        console.log(`Loading talkgroup data from ${talkgroupFile}`);
-        const csvContent = fs.readFileSync(talkgroupFile, 'utf-8');
+// Load talkgroup data for all systems
+function loadTalkgroups() {
+    const talkgroupsDir = path.join('data', 'talkgroups');
+    
+    // First load the default talkgroups
+    const defaultFile = path.join(talkgroupsDir, 'talkgroups.csv');
+    if (fs.existsSync(defaultFile)) {
+        loadTalkgroupFile(defaultFile);
+    }
+
+    // Then load any system-specific files
+    if (fs.existsSync(talkgroupsDir)) {
+        const files = fs.readdirSync(talkgroupsDir);
+        files.forEach(file => {
+            if (file.endsWith('-talkgroups.csv')) {
+                loadTalkgroupFile(path.join(talkgroupsDir, file));
+            }
+        });
+    }
+}
+
+function loadTalkgroupFile(filePath) {
+    try {
+        console.log(`Loading talkgroup data from ${filePath}`);
+        const csvContent = fs.readFileSync(filePath, 'utf-8');
         const csvLines = csvContent
             .split('\n')
             .filter(line => line.trim() && !line.startsWith('#')); // Skip comments and empty lines
@@ -107,89 +141,70 @@ try {
         });
         
         if (headerIndex === -1) {
-            console.error('Error: CSV file must have a header with at least "decimal" and "alphaTag" columns');
-        } else {
-            const dataLines = csvLines.slice(headerIndex + 1);
-            dataLines.forEach(line => {
-                if (line.trim()) {
-                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
-                        // Remove quotes and trim whitespace
-                        return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
-                    });
-                    if (decimal) {
-                        talkgroupsMap.set(decimal, {
-                            hex: hex || '',
-                            alphaTag: alphaTag || `Talkgroup ${decimal}`,
-                            mode: mode || '',
-                            description: description || '',
-                            tag: tag || 'Unknown',
-                            category: category || 'Unknown'
-                        });
-                    }
-                }
-            });
-            console.log(`Loaded ${talkgroupsMap.size} talkgroups`);
+            console.error(`Error: ${filePath} must have a header with at least "decimal" and "alphaTag" columns`);
+            return;
         }
-    } else {
-        console.log('No talkgroup file found, will create one as talkgroups are discovered');
-        talkgroupFile = 'talkgroups.csv';
+
+        const dataLines = csvLines.slice(headerIndex + 1);
+        dataLines.forEach(line => {
+            if (line.trim()) {
+                const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
+                    // Remove quotes and trim whitespace
+                    return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
+                });
+                if (decimal) {
+                    talkgroupsMap.set(decimal, {
+                        hex: hex || '',
+                        alphaTag: alphaTag || `Talkgroup ${decimal}`,
+                        mode: mode || '',
+                        description: description || '',
+                        tag: tag || 'Unknown',
+                        category: category || 'Unknown',
+                        shortName: filePath.startsWith('talkgroups.csv') ? null : filePath.split('-')[0]
+                    });
+                }
+            }
+        });
+        console.log(`Loaded ${dataLines.length} talkgroups from ${filePath}`);
+    } catch (error) {
+        console.error(`Error loading talkgroup file ${filePath}:`, error);
     }
-} catch (error) {
-    console.error('Error loading talkgroup file:', error);
-    console.log('Will create new file as talkgroups are discovered');
-    talkgroupFile = 'talkgroups.csv';
 }
 
+// Initial load of talkgroups
+loadTalkgroups();
+
 // Save talkgroups periodically (every 5 minutes)
-setInterval(saveTalkgroups, 5 * 60 * 1000);
+setInterval(() => {
+    // Save default talkgroups
+    saveTalkgroups(null);
+    
+    // Save system-specific talkgroups
+    const systemFiles = [...talkgroupFiles.keys()];
+    systemFiles.forEach(shortName => saveTalkgroups(shortName));
+}, 5 * 60 * 1000);
 
-// Watch for changes to talkgroups.csv
-fs.watch(talkgroupFile, async (eventType, filename) => {
-    if (eventType === 'change') {
-        console.log('Detected change in talkgroups.csv, reloading...');
-        try {
-            const csvContent = fs.readFileSync(talkgroupFile, 'utf-8');
-            const csvLines = csvContent
-                .split('\n')
-                .filter(line => line.trim() && !line.startsWith('#'));
-
-            const headerIndex = csvLines.findIndex(line => {
-                const lowerLine = line.toLowerCase();
-                return lowerLine.includes('decimal') && 
-                       (lowerLine.includes('alphatag') || lowerLine.includes('alpha tag'));
-            });
-
-            if (headerIndex !== -1) {
-                // Clear existing data
-                talkgroupsMap.clear();
-                unknownTalkgroups.clear();
-
-                const dataLines = csvLines.slice(headerIndex + 1);
-                dataLines.forEach(line => {
-                    if (line.trim()) {
-                        const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
-                            return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
-                        });
-                        if (decimal) {
-                            talkgroupsMap.set(decimal, {
-                                hex: hex || '',
-                                alphaTag: alphaTag || `Talkgroup ${decimal}`,
-                                mode: mode || '',
-                                description: description || '',
-                                tag: tag || 'Unknown',
-                                category: category || 'Unknown'
-                            });
-                        }
-                    }
-                });
-                console.log(`Reloaded ${talkgroupsMap.size} talkgroups from file change`);
-                io.emit('talkgroupsReloaded');
-            }
-        } catch (error) {
-            console.error('Error reloading talkgroups from file change:', error);
-        }
+// Watch for changes to talkgroup files
+function watchTalkgroupFiles() {
+    const talkgroupsDir = path.join('data', 'talkgroups');
+    
+    if (!fs.existsSync(talkgroupsDir)) {
+        console.log('Creating talkgroups directory...');
+        fs.mkdirSync(talkgroupsDir, { recursive: true });
     }
-});
+
+    // Watch the entire talkgroups directory for changes
+    fs.watch(talkgroupsDir, async (eventType, filename) => {
+        if (eventType === 'change' && filename.endsWith('.csv')) {
+            console.log(`Detected change in ${filename}, reloading...`);
+            loadTalkgroupFile(path.join(talkgroupsDir, filename));
+            io.emit('talkgroupsReloaded');
+        }
+    });
+}
+
+// Start watching files
+watchTalkgroupFiles();
 
 // Endpoint to get talkgroup metadata
 app.get('/api/talkgroups', (req, res) => {
@@ -203,63 +218,20 @@ app.get('/api/talkgroups', (req, res) => {
 // IMPORTANT: This endpoint must come before the :decimal endpoint to prevent route conflicts
 app.post('/api/talkgroups/reload', async (req, res) => {
     try {
-        if (fs.existsSync(talkgroupFile)) {
-            // Clear existing data
-            talkgroupsMap.clear();
-            unknownTalkgroups.clear();
+        // Clear existing data
+        talkgroupsMap.clear();
+        unknownTalkgroups.clear();
 
-            console.log(`Reloading talkgroup data from ${talkgroupFile}`);
-            const csvContent = fs.readFileSync(talkgroupFile, 'utf-8');
-            console.log('CSV file size:', csvContent.length, 'bytes');
-            const csvLines = csvContent
-                .split('\n')
-                .filter(line => line.trim() && !line.startsWith('#')); // Skip comments and empty lines
-            
-            console.log('Total lines after filtering:', csvLines.length);
-
-            // Find the header line
-            const headerIndex = csvLines.findIndex(line => {
-                console.log('Checking line for header:', line);
-                const lowerLine = line.toLowerCase();
-                return lowerLine.includes('decimal') && 
-                       (lowerLine.includes('alphatag') || lowerLine.includes('alpha tag'));
-            });
-            
-            console.log('Header index:', headerIndex);
-            
-            if (headerIndex === -1) {
-                throw new Error('CSV file must have a header with at least "decimal" and "alphaTag" columns');
-            }
-
-            const dataLines = csvLines.slice(headerIndex + 1);
-            console.log('Data lines to process:', dataLines.length);
-            dataLines.forEach(line => {
-                if (line.trim()) {
-                    const [decimal, hex, alphaTag, mode, description, tag, category] = line.split(',').map(field => {
-                        // Remove quotes and trim whitespace
-                        return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
-                    });
-                    if (decimal) {
-                        talkgroupsMap.set(decimal, {
-                            hex: hex || '',
-                            alphaTag: alphaTag || `Talkgroup ${decimal}`,
-                            mode: mode || '',
-                            description: description || '',
-                            tag: tag || 'Unknown',
-                            category: category || 'Unknown'
-                        });
-                    }
-                }
-            });
-            console.log(`Reloaded ${talkgroupsMap.size} talkgroups`);
-            
-            // Notify all clients that talkgroup metadata has been updated
-            io.emit('talkgroupsReloaded');
-            
-            res.json({ status: 'success', message: `Reloaded ${talkgroupsMap.size} talkgroups` });
-        } else {
-            throw new Error('Talkgroup file not found');
-        }
+        // Load all talkgroup files
+        loadTalkgroups();
+        
+        // Notify all clients that talkgroup metadata has been updated
+        io.emit('talkgroupsReloaded');
+        
+        res.json({ 
+            status: 'success', 
+            message: `Reloaded ${talkgroupsMap.size} talkgroups` 
+        });
     } catch (error) {
         console.error('Error reloading talkgroup file:', error);
         res.status(500).json({ error: 'Failed to reload talkgroups: ' + error.message });
@@ -290,7 +262,9 @@ app.post('/api/talkgroups/:decimal', express.json(), async (req, res) => {
     unknownTalkgroups.delete(decimal);
 
     // Save changes
-    await saveTalkgroups();
+    const talkgroupData = talkgroupsMap.get(decimal);
+    const systemShortName = talkgroupData?.shortName || null;
+    await saveTalkgroups(systemShortName);
 
     res.json({ status: 'success', message: 'Talkgroup updated' });
 });
@@ -542,7 +516,8 @@ async function connectToMongo() {
                     if (talkgroupId && !talkgroupsMap.has(talkgroupId)) {
                         unknownTalkgroups.add(talkgroupId);
                         // Save changes immediately when new talkgroup is discovered
-                        await saveTalkgroups();
+                        const systemShortName = event.systemShortName || null;
+                        await saveTalkgroups(systemShortName);
                     }
 
                     // Add talkgroup metadata to the event

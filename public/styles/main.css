@@ -392,7 +392,7 @@ body {
 .radio.event-ackresp { background-color: #20c997; }
 .radio.event-on { background-color: #ffc107; }
 
-.county-filter {
+.system-filter {
     display: flex;
     gap: 5px;
     align-items: center;
@@ -402,7 +402,7 @@ body {
     border: 1px solid var(--border-color);
 }
 
-.county-button {
+.system-button {
     background: transparent;
     border: none;
     padding: 4px 8px;
@@ -413,16 +413,16 @@ body {
     transition: all 0.2s ease;
 }
 
-.county-button:hover {
+.system-button:hover {
     background: var(--button-hover);
 }
 
-.county-button.active {
+.system-button.active {
     background: var(--button-active);
     color: white;
 }
 
-.county-button.active:hover {
+.system-button.active:hover {
     background: var(--button-active-hover);
 }
 

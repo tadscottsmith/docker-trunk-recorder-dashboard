@@ -10,7 +10,7 @@ services:
       "--setParameter", "enableTestCommands=1"
     ]
     volumes:
-      - mongodb_data:/data/db
+      - ./data/mongodb:/data/db
     networks:
       - trunk_network
     healthcheck:
@@ -27,13 +27,16 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./examples/talkgroups.csv:/app/talkgroups.csv
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./data:/app/data
+      - ./package.json:/app/package.json
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
-      - TALKGROUP_FILE=/app/talkgroups.csv
-      - COUNTY_FILTERS=${COUNTY_FILTERS:-hamco|Hamilton,warco|Warren,butco|Butler,monco|Montgomery}
+      - SYSTEM_FILTERS=${SYSTEM_FILTERS:-hamco|Hamilton P25,warco|Warren P25,butco|Butler P25,monco|Montgomery P25}
+      - NODE_ENV=development
     depends_on:
       - mongodb
     networks:
@@ -98,7 +101,3 @@ services:
 networks:
   trunk_network:
     driver: bridge
-
-volumes:
-  mongodb_data:
-    driver: local
