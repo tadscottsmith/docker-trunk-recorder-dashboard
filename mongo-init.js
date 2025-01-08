@@ -22,10 +22,17 @@ const validator = {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["type", "timestamp"],
+      required: ["shortName", "radioID", "eventType", "timestamp"],
       properties: {
-        type: { bsonType: "string" },
-        timestamp: { bsonType: "date" }
+        shortName: { bsonType: "string" },
+        radioID: { bsonType: "string" },
+        eventType: { bsonType: "string" },
+        timestamp: { bsonType: "string" },
+        talkgroupOrSource: { bsonType: ["string", "null"] },
+        patchedTalkgroups: { 
+          bsonType: ["array", "null"],
+          items: { bsonType: "string" }
+        }
       }
     }
   }
