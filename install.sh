@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # One-click installer for Trunk Recorder Dashboard
-# Version: 1.3
+# Version: 1.4
 # Author: Cline
 # Repository: https://github.com/LumenPrima/docker-trunk-recorder-dashboard
 
