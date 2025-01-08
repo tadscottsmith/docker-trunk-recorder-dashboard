@@ -18,6 +18,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    user: "${UID:-1000}:${GID:-1000}"
 
   dashboard:
     build:
@@ -38,9 +39,18 @@ services:
       - SYSTEM_FILTERS=${SYSTEM_FILTERS:-hamco|Hamilton P25,warco|Warren P25,butco|Butler P25,monco|Montgomery P25}
       - NODE_ENV=development
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
     networks:
       - trunk_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   ingest:
     build:
@@ -55,9 +65,18 @@ services:
       - COLLECTION_NAME=radio_events
       - HTTP_MONGO_PORT=3001
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
     networks:
       - trunk_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Initialize MongoDB Replica Set
   mongo-init:

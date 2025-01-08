@@ -5,19 +5,29 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including devDependencies in development)
-RUN if [ "$NODE_ENV" = "production" ]; then \
+# Install dependencies and curl for healthcheck
+RUN apt-get update && apt-get install -y curl \
+    && if [ "$NODE_ENV" = "production" ]; then \
         npm ci --only=production; \
     else \
         npm install; \
-    fi
+    fi \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy application files
 COPY src/ ./src/
 COPY public/ ./public/
 
-# Create data directory
-RUN mkdir -p data/talkgroups
+# Create data directories with proper structure
+RUN mkdir -p \
+    data/mongodb \
+    data/talkgroups \
+    && touch data/system-alias.csv \
+    && chown -R node:node data/
+
+# Switch to non-root user
+USER node
 
 # Expose port for the main dashboard
 EXPOSE 3000
