@@ -186,41 +186,72 @@ gather_logs() {
     echo -e "Please attach this file when reporting issues on GitHub"
 }
 
+# Download and configure environment file
+setup_environment() {
+    echo -e "${YELLOW}Downloading environment configuration file...${NC}"
+    curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/feature/improved-filtering/.env.example
+    verify_command "$?" "Failed to download .env.example"
+    
+    mv .env.example .env
+    verify_command "$?" "Failed to rename .env.example to .env"
+    
+    echo -e "${GREEN}Created .env file${NC}"
+    echo -e "${YELLOW}Please edit .env file now if needed. Common settings:${NC}"
+    echo -e "  DASHBOARD_PORT: External port for the dashboard (default: 3000)"
+    echo -e "  SYSTEM_FILTERS: Your system names and display names"
+    echo -e "  RADIOS_FILE: Path to your radios.csv file (optional)"
+    
+    while true; do
+        read -p "Would you like to edit the .env file before continuing? (y/n) " yn
+        case $yn in
+            [Yy]* )
+                if command -v nano >/dev/null 2>&1; then
+                    nano .env
+                elif command -v vim >/dev/null 2>&1; then
+                    vim .env
+                else
+                    echo -e "${YELLOW}No editor found. Please edit .env manually and press Enter to continue${NC}"
+                    read
+                fi
+                break;;
+            [Nn]* ) break;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+    
+    echo -e "${GREEN}Environment configuration complete${NC}"
+}
+
 # Initialize installation
 echo -e "${GREEN}Starting Trunk Recorder Dashboard installation...${NC}"
 echo -e "${YELLOW}Checking system requirements...${NC}"
 check_requirements
 
-# Step 1: Clone repository
-echo -e "${YELLOW}[1/5] Cloning repository...${NC}"
+# Step 1: Setup environment
+echo -e "${YELLOW}[1/6] Setting up environment...${NC}"
+setup_environment
+
+# Step 2: Clone repository
+echo -e "${YELLOW}[2/6] Cloning repository...${NC}"
 echo -e "${YELLOW}→ From: https://github.com/LumenPrima/docker-trunk-recorder-dashboard${NC}"
 git clone -b feature/install-improvements https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git .
 verify_command "$?" "Failed to clone repository"
 echo -e "${GREEN}✓ Repository cloned successfully${NC}"
 
-# Step 2: Setup environment
-echo -e "${YELLOW}[2/5] Setting up environment...${NC}"
-if [ ! -f ".env.example" ]; then
-    echo -e "${RED}Missing .env.example file${NC}"
-    exit 1
-fi
-
-cp .env.example .env
-verify_command "$?" "Failed to create .env file"
-
-# Handle data directory
+# Step 3: Handle data directory
+echo -e "${YELLOW}[3/6] Setting up data directory...${NC}"
 handle_data_directory
 
-# Step 3: Build Docker images
-echo -e "${YELLOW}[3/5] Building Docker images...${NC}"
+# Step 4: Build Docker images
+echo -e "${YELLOW}[4/6] Building Docker images...${NC}"
 echo -e "${YELLOW}→ Building dashboard image${NC}"
 docker-compose build dashboard
 echo -e "${YELLOW}→ Building ingest service image${NC}"
 docker-compose build ingest
 echo -e "${GREEN}✓ Docker images built successfully${NC}"
 
-# Step 4: Start services
-echo -e "${YELLOW}[4/5] Starting services...${NC}"
+# Step 5: Start services
+echo -e "${YELLOW}[5/6] Starting services...${NC}"
 echo -e "${YELLOW}→ Starting MongoDB${NC}"
 docker-compose up -d mongodb
 sleep 5
@@ -239,8 +270,8 @@ echo -e "${YELLOW}→ Starting dashboard and ingest services${NC}"
 docker-compose up -d dashboard ingest
 echo -e "${GREEN}✓ Services started${NC}"
 
-# Step 5: Verify installation
-echo -e "${YELLOW}[5/5] Verifying installation...${NC}"
+# Step 6: Verify installation
+echo -e "${YELLOW}[6/6] Verifying installation...${NC}"
 echo -e "${YELLOW}→ Checking container status...${NC}"
 
 # Wait for services to be ready (timeout after 30 seconds)
