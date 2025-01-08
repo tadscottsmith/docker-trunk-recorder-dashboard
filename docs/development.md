@@ -51,17 +51,23 @@ public/
 
 The project includes a development environment with hot reloading:
 
-1. Install dependencies:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git
+   cd docker-trunk-recorder-dashboard
+   ```
+
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Create data directories:
+3. Create data directories:
    ```bash
    mkdir -p data/mongodb data/talkgroups
    ```
 
-3. Start the development environment:
+4. Start the development environment:
    ```bash
    docker compose up -d
    ```
@@ -93,7 +99,7 @@ The development environment uses Docker Compose with the following features:
 - `MONGODB_URI`: Database connection string
 - `DB_NAME`: Database name
 - `COLLECTION_NAME`: Collection name
-- `COUNTY_FILTERS`: County filter configuration
+- `SYSTEM_FILTERS`: System filter configuration (format: "shortname|Display Name,...")
 
 ## Data Storage
 
@@ -109,6 +115,12 @@ The development environment uses Docker Compose with the following features:
 - Supports multiple system-specific files
 - Hot-reloading enabled for file changes
 
+### System Aliases
+- Location: `data/system-alias.csv`
+- Maps system shortnames to display names
+- Auto-generated for new systems
+- Hot-reloading enabled for changes
+
 ## Code Organization
 
 ### Backend Services
@@ -117,16 +129,19 @@ The development environment uses Docker Compose with the following features:
 - Manages talkgroup file operations
 - Handles file watching and reloading
 - Maintains talkgroup metadata
+- Manages system aliases
 
 #### MongoDBService
 - Manages database connections
 - Handles change streams
 - Provides data access methods
+- Attaches system metadata
 
 #### WebSocketService
 - Manages Socket.IO connections
 - Handles real-time event broadcasting
 - Provides client communication
+- Emits system updates
 
 ### Frontend Components
 
@@ -134,16 +149,19 @@ The development environment uses Docker Compose with the following features:
 - Handles filtering and sorting logic
 - Manages filter state
 - Updates UI based on filter changes
+- Handles system filtering
 
 #### TalkgroupCard
 - Creates talkgroup display cards
 - Handles card interactions
 - Manages history modal
+- Displays system information
 
 #### UIManager
 - Coordinates UI components
 - Manages global UI state
 - Handles component communication
+- Updates system filters
 
 ## API Endpoints
 
@@ -162,7 +180,7 @@ The development environment uses Docker Compose with the following features:
 
 ## Contributing
 
-1. Fork the repository
+1. Fork the repository from [GitHub](https://github.com/LumenPrima/docker-trunk-recorder-dashboard)
 2. Create a feature branch
 3. Make your changes
 4. Run tests (when implemented)

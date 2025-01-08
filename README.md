@@ -45,7 +45,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 2. Download and start the dashboard:
    ```bash
    # Get the code
-   git clone https://github.com/yourusername/docker-trunk-recorder-dashboard.git
+   git clone https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git
    cd docker-trunk-recorder-dashboard
 
    # Copy example environment file
@@ -205,4 +205,4 @@ For safe operation:
 ## Documentation
 
 - [Development Guide](docs/development.md): Project structure, setup, and technical details
-- [Issues](https://github.com/yourusername/docker-trunk-recorder-dashboard/issues): Bug reports and feature requests
+- [Issues](https://github.com/LumenPrima/docker-trunk-recorder-dashboard/issues): Bug reports and feature requests
