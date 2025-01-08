@@ -188,14 +188,19 @@ gather_logs() {
 
 # Download and configure environment file
 setup_environment() {
-    echo -e "${YELLOW}Downloading environment configuration file...${NC}"
-    curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/feature/improved-filtering/.env.example
-    verify_command "$?" "Failed to download .env.example"
-    
-    mv .env.example .env
-    verify_command "$?" "Failed to rename .env.example to .env"
-    
-    echo -e "${GREEN}Created .env file${NC}"
+    if [ -f ".env" ]; then
+        echo -e "${YELLOW}Found existing .env file${NC}"
+        echo -e "${GREEN}Using existing configuration${NC}"
+    else
+        echo -e "${YELLOW}Downloading environment configuration file...${NC}"
+        curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/feature/improved-filtering/.env.example
+        verify_command "$?" "Failed to download .env.example"
+        
+        mv .env.example .env
+        verify_command "$?" "Failed to rename .env.example to .env"
+        
+        echo -e "${GREEN}Created .env file${NC}"
+    fi
     echo -e "${YELLOW}Please edit .env file now if needed. Common settings:${NC}"
     echo -e "  DASHBOARD_PORT: External port for the dashboard (default: 3000)"
     echo -e "  SYSTEM_FILTERS: Your system names and display names"
