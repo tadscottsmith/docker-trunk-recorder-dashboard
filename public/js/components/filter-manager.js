@@ -257,7 +257,7 @@ export class FilterManager {
     getFilterState() {
         return {
             showActiveOnly: this.showActiveOnly,
-            currentSort: this.currentSort,
+            sortBy: this.currentSort,
             excludedTalkgroups: this.excludedTalkgroups,
             currentCategory: this.currentCategory,
             showUnassociated: this.showUnassociated
