@@ -192,10 +192,15 @@ echo -e "${YELLOW}→ Starting MongoDB${NC}"
 docker-compose up -d mongodb
 sleep 5
 
-echo -e "${YELLOW}→ Starting mongo-init${NC}"
-docker-compose up mongo-init
-echo -e "${YELLOW}→ Waiting for MongoDB initialization...${NC}"
-sleep 5
+echo -e "${YELLOW}→ Initializing MongoDB${NC}"
+docker-compose --profile init up mongo-init
+if [ $? -ne 0 ]; then
+    echo -e "${RED}MongoDB initialization failed${NC}"
+    echo -e "${YELLOW}→ Collecting logs for troubleshooting...${NC}"
+    gather_logs
+    exit 1
+fi
+echo -e "${GREEN}✓ MongoDB initialized${NC}"
 
 echo -e "${YELLOW}→ Starting dashboard and ingest services${NC}"
 docker-compose up -d dashboard ingest

@@ -40,8 +40,6 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-      mongo-init:
-        condition: service_completed_successfully
     networks:
       - trunk_network
     healthcheck:
@@ -69,8 +67,6 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-      mongo-init:
-        condition: service_completed_successfully
     networks:
       - trunk_network
     healthcheck:
@@ -80,10 +76,11 @@ services:
       retries: 3
       start_period: 90s
 
-  # Initialize MongoDB Replica Set and Collections
+  # One-time MongoDB initialization
   mongo-init:
     image: mongo:latest
     restart: "no"
+    profiles: ["init"]
     depends_on:
       mongodb:
         condition: service_healthy
