@@ -34,7 +34,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/cdb24f2/install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/678af2d/install.sh
    chmod +x install.sh
    ./install.sh
    ```
@@ -42,7 +42,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 
 #### Troubleshooting and Bug Reports
 
-The installer performs several pre-flight checks to ensure:
+The installer provides detailed feedback during the installation process and performs several pre-flight checks to ensure:
 - Required tools are installed (Docker, Docker Compose, Git, curl)
 - Docker service is running
 - Sufficient disk space is available (minimum 1GB)
