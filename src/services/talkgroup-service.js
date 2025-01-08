@@ -18,6 +18,23 @@ class TalkgroupService {
         });
     }
 
+    async initializeSystems() {
+        // Initialize systems from environment variable
+        const systemFilters = process.env.SYSTEM_FILTERS;
+        if (systemFilters) {
+            const systems = systemFilters.split(',');
+            for (const filter of systems) {
+                const [shortName, displayName] = filter.split('|');
+                if (shortName) {
+                    await this.addSystem(shortName);
+                    if (displayName) {
+                        await systemAliasService.updateAlias(shortName, displayName);
+                    }
+                }
+            }
+        }
+    }
+
     // Get list of known systems with aliases
     getKnownSystems() {
         return Array.from(this.knownSystems).map(shortName => ({
@@ -162,7 +179,7 @@ class TalkgroupService {
         }
     }
 
-    setupFileWatcher(io) {
+    async setupFileWatcher(io) {
         this.io = io;
         const talkgroupsDir = path.join('data', 'talkgroups');
         
@@ -170,6 +187,9 @@ class TalkgroupService {
             console.log('Creating talkgroups directory...');
             fs.mkdirSync(talkgroupsDir, { recursive: true });
         }
+
+        // Initialize systems before setting up watcher
+        await this.initializeSystems();
 
         // Watch the entire talkgroups directory for changes
         fs.watch(talkgroupsDir, async (eventType, filename) => {
