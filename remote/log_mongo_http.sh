@@ -1,6 +1,31 @@
 #!/bin/bash
 
-# Configuration
+# =============================================================================
+# Configuration Variables
+# =============================================================================
+# To customize these settings, either:
+# 1. Set them as environment variables before running trunk-recorder:
+#    export HTTP_HOST="192.168.1.100"
+#    export HTTP_PORT="3001"
+#    ./trunk-recorder
+#
+# 2. Or modify the default values below:
+#    HTTP_HOST="192.168.1.100"  # Remove the # at the start of the line
+#
+# Available Settings:
+# HTTP_HOST      - Dashboard server address (default: localhost)
+# HTTP_PORT      - Dashboard server port (default: 3001)
+# DEBUG          - Enable debug logging (default: false)
+# CONN_TIMEOUT   - Connection timeout in seconds (default: 1)
+#
+# Examples:
+#HTTP_HOST="192.168.1.100"     # Use specific IP address
+#HTTP_PORT="8080"              # Use alternate port
+#DEBUG="true"                  # Enable debug logging
+#CONN_TIMEOUT="2"             # Increase timeout to 2 seconds
+# =============================================================================
+
+# Load configuration with defaults
 HTTP_HOST="${HTTP_HOST:-localhost}"
 HTTP_PORT="${HTTP_PORT:-3001}"
 DEBUG="${DEBUG:-false}"
