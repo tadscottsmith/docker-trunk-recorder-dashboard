@@ -112,7 +112,7 @@ services:
           // Create collections with validators
           db.createCollection(\"radio_events\", {
             validator: {
-              \$jsonSchema: {
+              '$jsonSchema': {
                 bsonType: \"object\",
                 required: [\"type\", \"timestamp\"],
                 properties: {
