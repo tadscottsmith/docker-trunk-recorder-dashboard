@@ -1,108 +1,130 @@
 #!/bin/bash
 
-# Load environment variables from .env file if it exists
-if [ -f "$(dirname "$0")/.env" ]; then
-  export $(cat "$(dirname "$0")/.env" | grep -v '#' | sed 's/\r$//' | awk '/=/ {print $1}')
-fi
-
-# Configuration with defaults
-HTTP_HOST="${HTTP_MONGO_HOST:-localhost}"
-HTTP_PORT="${HTTP_MONGO_PORT:-3001}"
+# Configuration
+HTTP_HOST="${HTTP_HOST:-localhost}"
+HTTP_PORT="${HTTP_PORT:-3001}"
 DEBUG="${DEBUG:-false}"
+CONN_TIMEOUT="${CONN_TIMEOUT:-1}"
 
-# Verify ingest service is accessible
-if [ "$DEBUG" = true ]; then
-  echo "Checking connection to http://${HTTP_HOST}:${HTTP_PORT}/health" >> ./script_debug.log
-fi
+# Debug logging with simple rotation
+log_debug() {
+    if [ "$DEBUG" = true ]; then
+        echo "$1" >> ./script_debug.log
+        # Rotate log if it exceeds 1MB
+        if [ $(wc -c < ./script_debug.log) -gt 1048576 ]; then
+            mv ./script_debug.log ./script_debug.log.old
+        fi
+    fi
+}
 
-if ! curl -s "http://${HTTP_HOST}:${HTTP_PORT}/health" > /dev/null; then
-    echo "Error: Cannot connect to ingest service at http://${HTTP_HOST}:${HTTP_PORT}"
-    echo "Please ensure:"
-    echo "1. The Docker containers are running on the dashboard machine"
-    echo "2. The dashboard machine IP is correct in .env"
-    echo "3. Port 3001 is accessible"
+# JSON creation with escaping
+create_json() {
+    local shortName="${1//\\/\\\\}"
+    shortName="${shortName//\"/\\\"}"
+    shortName="${shortName//$'\n'/\\n}"
+    local radioID="${2//\\/\\\\}"
+    radioID="${radioID//\"/\\\"}"
+    radioID="${radioID//$'\n'/\\n}"
+    local eventType="${3//\\/\\\\}"
+    eventType="${eventType//\"/\\\"}"
+    eventType="${eventType//$'\n'/\\n}"
+    local talkgroupOrSource="${4//\\/\\\\}"
+    talkgroupOrSource="${talkgroupOrSource//\"/\\\"}"
+    talkgroupOrSource="${talkgroupOrSource//$'\n'/\\n}"
+    local patchedTalkgroups="${5//\\/\\\\}"
+    patchedTalkgroups="${patchedTalkgroups//\"/\\\"}"
+    patchedTalkgroups="${patchedTalkgroups//$'\n'/\\n}"
+
+    cat << EOF
+{
+    "shortName": "$shortName",
+    "radioID": "$radioID",
+    "eventType": "$eventType",
+    "talkgroupOrSource": "$talkgroupOrSource",
+    "patchedTalkgroups": "$patchedTalkgroups"
+}
+EOF
+}
+
+# HTTP POST using /dev/tcp
+http_post() {
+    local host="$1"
+    local port="$2"
+    local path="$3"
+    local payload="$4"
+
+    if ! exec 4<>/dev/tcp/$host/$port; then
+        log_debug "Failed to connect to $host:$port"
+        return 1
+    fi
+
+    echo -en "POST $path HTTP/1.1\r\nHost: $host:$port\r\nContent-Type: application/json\r\nContent-Length: ${#payload}\r\nConnection: close\r\n\r\n$payload" >&4
+
+    local response
+    if ! response=$(timeout $CONN_TIMEOUT cat <&4); then
+        log_debug "Timeout while reading response from $host:$port"
+        exec 4>&-
+        return 1
+    fi
+
+    exec 4>&-
+    echo "$response" | sed '1,/^$/d'
+}
+
+# Extract status from JSON response
+extract_status() {
+    local response="$1"
+    local status=$(echo "$response" | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+    echo "$status"
+}
+
+# Argument parsing
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --debug)
+            DEBUG=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Validate arguments
+if [ $# -lt 3 ]; then
+    log_debug "Insufficient arguments"
     exit 1
 fi
 
-# Parse command-line arguments
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --debug)
-      DEBUG=true
-      shift
-      ;;
-    *)
-      break
-      ;;
-  esac
-done
+[[ -z "$1" || -z "$2" || -z "$3" ]] && exit 1
+[[ "$2" =~ ^[0-9]+$ ]] || exit 1
 
-# Validate input arguments
-if [ $# -lt 3 ]; then
-  echo "Usage: $0 [--debug] <shortName> <radioID> <eventType> [talkgroup|source] [patchedTalkgroups]"
-  exit 1
+# Quick connection check
+if ! timeout $CONN_TIMEOUT bash -c "echo >/dev/tcp/${HTTP_HOST}/${HTTP_PORT}" 2>/dev/null; then
+    log_debug "Connection check failed"
+    exit 1
 fi
 
-# Assign arguments to variables
+# Assign variables
 SHORT_NAME="$1"
 RADIO_ID="$2"
 EVENT_TYPE="$3"
 TALKGROUP_OR_SOURCE="$4"
 PATCHED_TALKGROUPS="$5"
 
-# Debugging: Log parsed arguments
-if [ "$DEBUG" = true ]; then
-  echo "Short Name: $SHORT_NAME, Radio ID: $RADIO_ID, Event Type: $EVENT_TYPE, Talkgroup/Source: $TALKGROUP_OR_SOURCE, Patched Talkgroups: $PATCHED_TALKGROUPS" >> ./script_debug.log
-fi
+# Create JSON and send request
+JSON_DOC=$(create_json "$SHORT_NAME" "$RADIO_ID" "$EVENT_TYPE" "$TALKGROUP_OR_SOURCE" "$PATCHED_TALKGROUPS")
+[ "$DEBUG" = true ] && log_debug "JSON Payload: $JSON_DOC"
 
-# Create JSON payload
-JSON_DOC=$(jq -n \
-  --arg shortName "$SHORT_NAME" \
-  --arg radioID "$RADIO_ID" \
-  --arg eventType "$EVENT_TYPE" \
-  --arg talkgroupOrSource "$TALKGROUP_OR_SOURCE" \
-  --arg patchedTalkgroups "$PATCHED_TALKGROUPS" \
-  '{
-    shortName: $shortName,
-    radioID: $radioID,
-    eventType: $eventType,
-    talkgroupOrSource: $talkgroupOrSource,
-    patchedTalkgroups: $patchedTalkgroups
-  }')
+RESPONSE=$(http_post "$HTTP_HOST" "$HTTP_PORT" "/event" "$JSON_DOC") || exit 1
+[ "$DEBUG" = true ] && log_debug "Response: $RESPONSE"
 
-# Debugging: Log JSON payload
-if [ "$DEBUG" = true ]; then
-  echo "JSON Payload: $JSON_DOC" >> ./script_debug.log
-fi
-
-# Send HTTP request using curl
-RESPONSE=$(curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -d "$JSON_DOC" \
-  "http://${HTTP_HOST}:${HTTP_PORT}/event")
-
-# Check if curl command was successful
-if [ $? -eq 0 ]; then
-  if [ "$DEBUG" = true ]; then
-    echo "Response: $RESPONSE" >> ./script_debug.log
-  fi
-  
-  # Check response status
-  if echo "$RESPONSE" | jq -e '.status == "success"' > /dev/null; then
-    if [ "$DEBUG" = true ]; then
-      echo "Event logged successfully." >> ./script_debug.log
-    fi
-    exit 0
-  else
-    ERROR_MSG=$(echo "$RESPONSE" | jq -r '.message // "Unknown error"')
-    if [ "$DEBUG" = true ]; then
-      echo "Error: $ERROR_MSG" >> ./script_debug.log
-    fi
+# Validate response
+STATUS=$(extract_status "$RESPONSE")
+if [ "$STATUS" != "success" ]; then
+    log_debug "Request failed with status: $STATUS"
     exit 1
-  fi
-else
-  if [ "$DEBUG" = true ]; then
-    echo "Error: Failed to connect to HTTP service" >> ./script_debug.log
-  fi
-  exit 1
 fi
+
+exit 0
