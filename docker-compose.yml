@@ -5,16 +5,17 @@ services:
     command: [
       "--replSet", "rs0",
       "--bind_ip_all",
-      "--setParameter", "enableTestCommands=1"
+      "--setParameter", "enableTestCommands=1",
+      "--setParameter", "diagnosticDataCollectionEnabled=false"
     ]
     networks:
       - trunk_network
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "27017"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   dashboard:
     build:
@@ -47,8 +48,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
+      start_period: 90s
 
   ingest:
     build:
@@ -76,10 +77,10 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:3001"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
+      start_period: 90s
 
-  # Initialize MongoDB Replica Set
+  # Initialize MongoDB Replica Set and Collections
   mongo-init:
     image: mongo:latest
     restart: "no"
@@ -89,8 +90,9 @@ services:
     command: >
       bash -c "
         echo 'Waiting for MongoDB to start...' &&
-        sleep 5 &&
-        mongo --host mongodb:27017 --eval '
+        sleep 10 &&
+        mongosh --host mongodb:27017 --eval '
+          // Initialize replica set
           config = {
             _id: \"rs0\",
             members: [
@@ -98,6 +100,39 @@ services:
             ]
           };
           rs.initiate(config);
+          
+          // Wait for replica set to initialize
+          while (!rs.isMaster().ismaster) {
+            sleep(1000);
+          }
+          
+          // Switch to trunk_recorder database
+          db = db.getSiblingDB(\"trunk_recorder\");
+          
+          // Create collections with validators
+          db.createCollection(\"radio_events\", {
+            validator: {
+              \$jsonSchema: {
+                bsonType: \"object\",
+                required: [\"type\", \"timestamp\"],
+                properties: {
+                  type: { bsonType: \"string\" },
+                  timestamp: { bsonType: \"date\" }
+                }
+              }
+            }
+          });
+          
+          // Create indexes
+          db.radio_events.createIndex({ timestamp: -1 });
+          db.radio_events.createIndex({ \"talkgroup.id\": 1 });
+          
+          // Disable FTDC to reduce warnings
+          db.adminCommand({
+            setParameter: 1,
+            diagnosticDataCollectionDirectorySizeMB: 100,
+            diagnosticDataCollectionEnabled: false
+          });
         '
       "
     networks:
