@@ -84,8 +84,8 @@ class TalkgroupService {
         );
 
         try {
-            // Prepare CSV content
-            const header = 'decimal,hex,alphaTag,mode,description,tag,category';
+            // Prepare CSV content with trunk-recorder compatible header
+            const header = 'Decimal,Hex,Alpha Tag,Mode,Description,Tag,Category';
             const lines = [];
 
             // Add known talkgroups
@@ -94,7 +94,7 @@ class TalkgroupService {
                     decimal,
                     data.hex || '',
                     data.alphaTag || `Talkgroup ${decimal}`,
-                    data.mode || '',
+                    data.mode || 'D',
                     data.description || '',
                     data.tag || 'Unknown',
                     data.category || 'Unknown'
@@ -109,7 +109,7 @@ class TalkgroupService {
                         decimal,
                         '',
                         `Talkgroup ${decimal}`,
-                        '',
+                        'D',
                         '',
                         'Unknown',
                         'Unknown'
@@ -159,7 +159,7 @@ class TalkgroupService {
             const headerIndex = csvLines.findIndex(line => {
                 const lowerLine = line.toLowerCase();
                 return lowerLine.includes('decimal') && 
-                       (lowerLine.includes('alphatag') || lowerLine.includes('alpha tag'));
+                       (lowerLine.includes('alpha tag') || lowerLine.includes('alphatag'));
             });
             
             if (headerIndex === -1) {
