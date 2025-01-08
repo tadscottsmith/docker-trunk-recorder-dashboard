@@ -8,7 +8,7 @@ COPY package*.json ./
 # Install dependencies and curl for healthcheck
 RUN apt-get update && apt-get install -y curl \
     && if [ "$NODE_ENV" = "production" ]; then \
-        npm ci --only=production; \
+        npm install --omit=dev; \
     else \
         npm install; \
     fi \
