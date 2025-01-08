@@ -161,11 +161,17 @@ For safe operation:
 ## Version History
 
 ### Version 0.2.1
+- Added multi-talkgroup metadata system with per-system files
 - Added system alias support via data/system-alias.csv
 - Added dynamic system filter list based on active systems
-- Added real-time alias file monitoring
+- Added real-time alias and talkgroup file monitoring
 - Added automatic system name generation
 - Improved system filter UI with friendly names
+- Reorganized project into modular components
+- Added comprehensive development documentation
+- Improved error handling and logging
+- Added more detailed event history and radio tracking
+- Exposed more system metadata to users
 - Removed hardcoded county filters
 
 ### Version 0.1.3
