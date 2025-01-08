@@ -182,6 +182,12 @@ If you need public access, you must implement additional security:
 
 ## Updating
 
+### Version 0.1.3 Changes
+- Removed external dependencies from log_mongo_http.sh
+- Improved error handling and logging in the script
+- Added input validation for environment variables
+- Script now uses built-in tools instead of external utilities
+
 To update to the latest version:
 
 1. Stop the current instance:
