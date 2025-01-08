@@ -1,6 +1,6 @@
 {
   "name": "trunk-recorder-dashboard",
-  "version": "0.1.3",
+  "version": "0.2.1",
   "description": "A real-time dashboard for visualizing trunk-recorder radio activity",
   "main": "src/server.js",
   "scripts": {

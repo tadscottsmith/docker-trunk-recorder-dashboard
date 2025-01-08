@@ -160,6 +160,14 @@ For safe operation:
 
 ## Version History
 
+### Version 0.2.1
+- Added system alias support via data/system-alias.csv
+- Added dynamic system filter list based on active systems
+- Added real-time alias file monitoring
+- Added automatic system name generation
+- Improved system filter UI with friendly names
+- Removed hardcoded county filters
+
 ### Version 0.1.3
 - Removed external dependencies from log_mongo_http.sh
 - Improved error handling and logging
