@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -9,12 +7,10 @@ services:
       "--bind_ip_all",
       "--setParameter", "enableTestCommands=1"
     ]
-    volumes:
-      - ./data/mongodb:/data/db
     networks:
       - trunk_network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "nc", "-z", "localhost", "27017"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,7 +90,7 @@ services:
       bash -c "
         echo 'Waiting for MongoDB to start...' &&
         sleep 5 &&
-        mongosh --host mongodb:27017 --eval '
+        mongo --host mongodb:27017 --eval '
           config = {
             _id: \"rs0\",
             members: [
