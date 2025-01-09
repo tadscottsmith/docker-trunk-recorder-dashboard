@@ -81,21 +81,30 @@ class TalkgroupService {
     loadTalkgroups() {
         const talkgroupsDir = path.join('data', 'talkgroups');
         
-        // First load the default talkgroups
-        const defaultFile = path.join(talkgroupsDir, 'talkgroups.csv');
-        if (fs.existsSync(defaultFile)) {
-            this.loadTalkgroupFile(defaultFile);
+        // Create talkgroups directory if it doesn't exist
+        if (!fs.existsSync(talkgroupsDir)) {
+            console.log('Creating talkgroups directory...');
+            fs.mkdirSync(talkgroupsDir, { recursive: true });
         }
 
-        // Then load any system-specific files
-        if (fs.existsSync(talkgroupsDir)) {
-            const files = fs.readdirSync(talkgroupsDir);
-            files.forEach(file => {
-                if (file.endsWith('-talkgroups.csv')) {
-                    this.loadTalkgroupFile(path.join(talkgroupsDir, file));
-                }
-            });
+        // Create default talkgroups file with header if it doesn't exist
+        const defaultFile = path.join(talkgroupsDir, 'talkgroups.csv');
+        if (!fs.existsSync(defaultFile)) {
+            console.log('Creating default talkgroups.csv file...');
+            const header = 'Decimal,Hex,Alpha Tag,Mode,Description,Tag,Category';
+            fs.writeFileSync(defaultFile, header + '\n', 'utf-8');
         }
+
+        // Load the default talkgroups
+        this.loadTalkgroupFile(defaultFile);
+
+        // Load any system-specific files
+        const files = fs.readdirSync(talkgroupsDir);
+        files.forEach(file => {
+            if (file.endsWith('-talkgroups.csv')) {
+                this.loadTalkgroupFile(path.join(talkgroupsDir, file));
+            }
+        });
     }
 
     loadTalkgroupFile(filePath) {
@@ -198,36 +207,8 @@ class TalkgroupService {
 
         if (systemShortName) {
             this.knownSystems.add(systemShortName);
-            // Add system to alias file if not already there
-            const aliasPath = path.join('data', 'system-alias.csv');
-            try {
-                let content = '';
-                if (fs.existsSync(aliasPath)) {
-                    content = fs.readFileSync(aliasPath, 'utf-8');
-                }
-                const lines = content.split('\n').filter(line => line.trim());
-                const header = lines[0]?.toLowerCase().includes('shortname,alias') ? lines[0] : 'shortName,alias';
-                const systems = new Map(
-                    lines.slice(header === lines[0] ? 1 : 0)
-                        .map(line => {
-                            const [shortName, alias] = line.split(',').map(s => s.trim());
-                            return [shortName, alias];
-                        })
-                        .filter(([shortName]) => shortName)
-                );
-
-                // Add new system if not exists
-                if (!systems.has(systemShortName)) {
-                    systems.set(systemShortName, systemShortName);
-                    const newContent = [
-                        header,
-                        ...Array.from(systems.entries()).map(([shortName, alias]) => `${shortName},${alias}`)
-                    ].join('\n');
-                    fs.writeFileSync(aliasPath, newContent, 'utf-8');
-                }
-            } catch (error) {
-                console.error('Error updating system alias file:', error);
-            }
+            // Add system to alias service
+            await systemAliasService.addSystem(systemShortName);
         }
 
         return changed ? this.saveTalkgroups(systemShortName) : Promise.resolve();

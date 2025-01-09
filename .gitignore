@@ -26,3 +26,7 @@ mongodb_data/
 # OS
 .DS_Store
 Thumbs.db
+
+# Data files
+data/talkgroups/*.csv
+data/system-alias.csv

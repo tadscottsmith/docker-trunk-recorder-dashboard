@@ -1,3 +1,5 @@
+const systemAliasService = window.systemAliasService;
+
 export class TalkgroupManager {
     constructor() {
         this.talkgroups = {};
@@ -192,11 +194,15 @@ export class TalkgroupManager {
         return this.callStats[talkgroup] || { count: 0 };
     }
 
-    getKnownSystems() {
+    async getKnownSystems() {
         // Convert encounteredSystems to array of objects with shortName and displayName
-        return Array.from(this.encounteredSystems).map(shortName => ({
-            shortName,
-            displayName: shortName // Use shortName as displayName until alias is set
-        }));
+        const systems = Array.from(this.encounteredSystems);
+        const systemsWithAliases = await Promise.all(
+            systems.map(async shortName => ({
+                shortName,
+                displayName: await systemAliasService.getAlias(shortName)
+            }))
+        );
+        return systemsWithAliases;
     }
 }

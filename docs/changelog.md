@@ -1,5 +1,14 @@
 # Version History
 
+### Version 0.3.7
+- Improved data file handling
+  - Removed talkgroups.csv and system-alias.csv from repository
+  - Added automatic file creation with proper headers
+  - Updated .gitignore to prevent data file tracking
+  - Fixed system alias file updates
+  - Fixed crash when talkgroups.csv is missing
+  - Improved error handling for missing files
+
 ### Version 0.3.6
 - Updated installation to use main branch instead of feature branch
 - Added GitHub repository link to dashboard header

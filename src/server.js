@@ -72,8 +72,8 @@ async function initializeServices() {
         // Start periodic talkgroup saves
         setInterval(() => {
             talkgroupService.saveTalkgroups(null);
-            const systemFiles = [...talkgroupService.talkgroupFiles.keys()];
-            systemFiles.forEach(shortName => talkgroupService.saveTalkgroups(shortName));
+            const systems = [...talkgroupService.knownSystems];
+            systems.forEach(shortName => talkgroupService.saveTalkgroups(shortName));
         }, 5 * 60 * 1000);
 
     } catch (error) {

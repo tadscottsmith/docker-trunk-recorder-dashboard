@@ -41,6 +41,39 @@ class SystemAliasService {
         // Return the alias if it exists, otherwise return the shortName
         return this.aliasMap.get(shortName) || shortName;
     }
+
+    async addSystem(shortName) {
+        if (!shortName || this.aliasMap.has(shortName)) {
+            return;
+        }
+
+        try {
+            // Ensure directory exists
+            const dir = path.dirname(this.aliasFile);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+
+            // Create file with header if it doesn't exist
+            if (!fs.existsSync(this.aliasFile)) {
+                fs.writeFileSync(this.aliasFile, 'shortName,alias\n', 'utf-8');
+            }
+
+            // Add new system
+            this.aliasMap.set(shortName, shortName);
+            
+            // Write all aliases to file
+            const content = ['shortName,alias'];
+            for (const [name, alias] of this.aliasMap.entries()) {
+                content.push(`${name},${alias}`);
+            }
+            
+            await fs.promises.writeFile(this.aliasFile, content.join('\n') + '\n', 'utf-8');
+            console.log(`Added system ${shortName} to alias file`);
+        } catch (error) {
+            console.error('Error adding system to alias file:', error);
+        }
+    }
 }
 
 module.exports = new SystemAliasService();
