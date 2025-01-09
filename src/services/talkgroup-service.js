@@ -6,65 +6,16 @@ class TalkgroupService {
     constructor() {
         this.talkgroupsMap = new Map();
         this.unknownTalkgroups = new Set();
-        this.talkgroupFiles = new Map(); // Maps system shortNames to their talkgroup files
         this.knownSystems = new Set(); // Track unique system shortNames
         this.io = null; // Will be set when setupFileWatcher is called
-
-        // Listen for alias changes
-        systemAliasService.onAliasChange(() => {
-            if (this.io) {
-                this.io.emit('systemsUpdated');
-            }
-        });
     }
 
-    async initializeSystems() {
-        // Initialize systems from environment variable
-        const systemFilters = process.env.SYSTEM_FILTERS;
-        if (systemFilters) {
-            console.log('Initializing systems from SYSTEM_FILTERS:', systemFilters);
-            const systems = systemFilters.split(',');
-            for (const filter of systems) {
-                const [shortName, displayName] = filter.split('|');
-                if (shortName) {
-                    // First try to add the system (this won't overwrite existing aliases)
-                    await this.addSystem(shortName);
-                    
-                    // Only update alias if explicitly provided and different from current
-                    if (displayName) {
-                        const currentAlias = systemAliasService.getAlias(shortName);
-                        if (currentAlias !== displayName) {
-                            console.log(`Updating system ${shortName} alias: ${currentAlias} -> ${displayName}`);
-                            await systemAliasService.updateAlias(shortName, displayName);
-                        } else {
-                            console.log(`System ${shortName} alias unchanged: ${currentAlias}`);
-                        }
-                    }
-                }
-            }
-        } else {
-            console.log('No SYSTEM_FILTERS environment variable found');
-        }
-    }
-
-    // Get list of known systems with aliases
+    // Get list of known systems
     getKnownSystems() {
         return Array.from(this.knownSystems).map(shortName => ({
             shortName,
             displayName: systemAliasService.getAlias(shortName)
         }));
-    }
-
-    // Add a new system to known systems
-    async addSystem(shortName) {
-        if (shortName && !this.knownSystems.has(shortName)) {
-            console.log(`Adding new system to known systems: ${shortName}`);
-            this.knownSystems.add(shortName);
-            // This will only add to alias file if it doesn't exist
-            await systemAliasService.addSystem(shortName);
-            return true;
-        }
-        return false;
     }
 
     getTalkgroupFile(shortName) {
@@ -175,6 +126,10 @@ class TalkgroupService {
                         return field ? field.replace(/^"(.*)"$/, '$1').trim() : '';
                     });
                     if (decimal) {
+                        const shortName = path.basename(filePath).startsWith('talkgroups.csv') ? null : path.basename(filePath).split('-')[0];
+                        if (shortName) {
+                            this.knownSystems.add(shortName);
+                        }
                         this.talkgroupsMap.set(decimal, {
                             hex: hex || '',
                             alphaTag: alphaTag || `Talkgroup ${decimal}`,
@@ -182,7 +137,7 @@ class TalkgroupService {
                             description: description || '',
                             tag: tag || 'Unknown',
                             category: category || 'Unknown',
-                            shortName: path.basename(filePath).startsWith('talkgroups.csv') ? null : path.basename(filePath).split('-')[0]
+                            shortName: shortName
                         });
                     }
                 }
@@ -201,9 +156,6 @@ class TalkgroupService {
             console.log('Creating talkgroups directory...');
             fs.mkdirSync(talkgroupsDir, { recursive: true });
         }
-
-        // Initialize systems before setting up watcher
-        await this.initializeSystems();
 
         // Watch the entire talkgroups directory for changes
         fs.watch(talkgroupsDir, async (eventType, filename) => {
@@ -245,10 +197,7 @@ class TalkgroupService {
         }
 
         if (systemShortName) {
-            console.log(`Handling new system from talkgroup: ${systemShortName}`);
-            // This will only add to alias file if it doesn't exist
-            const systemAdded = await this.addSystem(systemShortName);
-            changed = changed || systemAdded;
+            this.knownSystems.add(systemShortName);
         }
 
         return changed ? this.saveTalkgroups(systemShortName) : Promise.resolve();
