@@ -1,5 +1,15 @@
 # Version History
 
+### Version 0.3.8
+- Improved Docker data handling
+  - Fixed data directory persistence in Docker volumes
+  - Added proper user permissions for mounted volumes
+  - Added runtime directory initialization
+- Improved system handling
+  - Removed predefined system filters
+  - Optimized system filter button updates to prevent flickering
+  - Added system list change detection to reduce UI updates
+
 ### Version 0.3.7.2
 - Fixed system alias file handling to properly preserve existing aliases when adding new systems
 

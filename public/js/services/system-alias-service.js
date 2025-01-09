@@ -1,6 +1,12 @@
 class SystemAliasService {
     constructor() {
         this.aliasCache = new Map();
+        
+        // Listen for system alias updates
+        window.socketIo.on('systemAliasesUpdated', () => {
+            console.log('System aliases updated, clearing cache');
+            this.aliasCache.clear();
+        });
     }
 
     async getAlias(shortName) {

@@ -34,10 +34,11 @@ services:
       - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
-      - SYSTEM_FILTERS=${SYSTEM_FILTERS:-hamco|Hamilton P25,warco|Warren P25,butco|Butler P25,monco|Montgomery P25}
+      - SYSTEM_FILTERS=${SYSTEM_FILTERS:-}
       - NODE_ENV=development
       - UID=${UID:-1000}
       - GID=${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"
     depends_on:
       mongodb:
         condition: service_healthy

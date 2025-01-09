@@ -84,6 +84,11 @@ class SystemAliasService {
 
                 // Update local map
                 this.aliasMap = systems;
+
+                // Notify clients of the update
+                if (this.io) {
+                    this.io.emit('systemAliasesUpdated');
+                }
             }
         } catch (error) {
             console.error('Error adding system to alias file:', error);

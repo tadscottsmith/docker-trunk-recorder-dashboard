@@ -19,13 +19,8 @@ RUN apt-get update && apt-get install -y curl \
 COPY src/ ./src/
 COPY public/ ./public/
 
-# Create data directories with proper structure
-RUN mkdir -p \
-    data/mongodb \
-    data/talkgroups \
-    && touch data/system-alias.csv \
-    && chown -R node:node /app \
-    && chmod -R 755 data/
+# Set permissions for app directory
+RUN chown -R node:node /app
 
 # Switch to non-root user
 USER node

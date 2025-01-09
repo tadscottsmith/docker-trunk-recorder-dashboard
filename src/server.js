@@ -2,11 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
 // Import services
 const mongodbService = require('./services/mongodb-service');
 const talkgroupService = require('./services/talkgroup-service');
 const websocketService = require('./services/websocket-service');
+const systemAliasService = require('./services/system-alias-service');
 
 // Import routes
 const talkgroupRoutes = require('./routes/talkgroup-routes');
@@ -30,6 +32,9 @@ const server = http.createServer(app);
 // Initialize WebSocket
 const io = websocketService.initialize(server);
 
+// Set io on services that need it
+systemAliasService.io = io;
+
 // Apply middleware
 app.use(corsMiddleware);
 app.use(express.json());
@@ -50,9 +55,35 @@ app.use(express.static('public'));
 // Error handling
 app.use(errorHandler);
 
+// Initialize data directories
+async function initializeDataDirectories() {
+    const dataDir = path.join(__dirname, '..', 'data');
+    const talkgroupsDir = path.join(dataDir, 'talkgroups');
+
+    try {
+        // Create data directory if it doesn't exist
+        if (!fs.existsSync(dataDir)) {
+            console.log('Creating data directory...');
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        // Create talkgroups directory if it doesn't exist
+        if (!fs.existsSync(talkgroupsDir)) {
+            console.log('Creating talkgroups directory...');
+            fs.mkdirSync(talkgroupsDir, { recursive: true });
+        }
+    } catch (error) {
+        console.error('Failed to initialize data directories:', error);
+        process.exit(1);
+    }
+}
+
 // Initialize services
 async function initializeServices() {
     try {
+        // Initialize data directories first
+        await initializeDataDirectories();
+
         // Connect to MongoDB
         await mongodbService.connect(
             process.env.MONGODB_URI,

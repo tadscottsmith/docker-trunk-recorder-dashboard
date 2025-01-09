@@ -3,6 +3,7 @@ export class FilterManager {
         this.talkgroupManager = talkgroupManager;
         this.onFilterChange = onFilterChange;
         this.pendingExclude = null;
+        this.knownSystems = new Set(); // Track known systems
         
         // Load saved state or use defaults
         const savedState = this.loadFilterState();
@@ -16,14 +17,35 @@ export class FilterManager {
 
         // Listen for system list updates
         window.socketIo.on('systemsUpdated', () => {
-            this.refreshSystemList();
+            this.checkAndUpdateSystems();
         });
 
         // Listen for talkgroups reloaded to check for new systems and update filters
         window.socketIo.on('talkgroupsReloaded', () => {
-            this.refreshSystemList();
+            this.checkAndUpdateSystems();
             this.updateFilterOptions();
         });
+    }
+
+    async checkAndUpdateSystems() {
+        try {
+            // Get current systems
+            const systems = await this.talkgroupManager.getKnownSystems();
+            const currentSystemSet = new Set(systems.map(s => s.shortName));
+
+            // Check if the system list has changed
+            const hasChanges = systems.length !== this.knownSystems.size ||
+                             [...currentSystemSet].some(s => !this.knownSystems.has(s)) ||
+                             [...this.knownSystems].some(s => !currentSystemSet.has(s));
+
+            if (hasChanges) {
+                console.log('System list changed, refreshing...');
+                this.knownSystems = currentSystemSet;
+                await this.refreshSystemList();
+            }
+        } catch (error) {
+            console.error('Error checking systems:', error);
+        }
     }
 
     async refreshSystemList() {
