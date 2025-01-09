@@ -88,6 +88,25 @@ export class FilterManager {
             // Set up category filter
             const categorySelect = document.getElementById('categoryFilter');
             if (categorySelect) {
+                // Get unique categories from active/seen talkgroups
+                const categories = new Set();
+                const activeTalkgroups = this.talkgroupManager.getActiveTalkgroups();
+                activeTalkgroups.forEach(talkgroup => {
+                    const metadata = this.talkgroupManager.getMetadata(talkgroup);
+                    if (metadata?.category) {
+                        categories.add(metadata.category);
+                    }
+                });
+
+                // Clear and populate select
+                categorySelect.innerHTML = '<option value="all">All Categories</option>';
+                Array.from(categories).sort().forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+
                 categorySelect.addEventListener('change', (e) => {
                     this.currentCategory = e.target.value === 'all' ? null : e.target.value;
                     this.onFilterChange();
