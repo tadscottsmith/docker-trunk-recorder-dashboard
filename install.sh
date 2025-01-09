@@ -270,7 +270,7 @@ if [ -f ".env" ]; then
 fi
 
 # Clone repository
-git clone -b feature/improved-filtering https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git temp_clone
+git clone -b main https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git temp_clone
 verify_command "$?" "Failed to clone repository"
 
 # Move files from temp directory

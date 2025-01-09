@@ -5,37 +5,37 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ## Features
 
 ### Live Monitoring
-- Real-time display of radio activity
-- Color-coded event types (calls, grants, denials)
-- Active call indicators
-- Live call duration tracking
+- Real-time display of radio activity with color-coded events
+- Active call indicators with live duration tracking
+- Automatic system recovery and status monitoring
 
 ### Talkgroup Management
-- Automatic talkgroup discovery and tracking
-- Import talkgroup data from Radio Reference
-- Auto-saves newly discovered talkgroups
-- Automatic updates when talkgroup file changes
-- Compatible with trunk-recorder talkgroup format
+- Multi-system support with automatic talkgroup discovery
+- Import from Radio Reference or auto-generate from activity
+- Tag-based organization with category filtering
+- Compatible with trunk-recorder CSV format
 
-### Historical Data
-- View activity from last 30 minutes to 12 hours
-- Call frequency analysis
-- Talkgroup-specific history
-- Unique radio tracking
+### System Features
+- Dynamic system alias management and configuration
+- Per-system talkgroup file support
+- Real-time file monitoring and updates
+
+### Historical Analysis
+- Configurable time ranges from 30 minutes to 12 hours
+- Call frequency analysis and event filtering
+- Talkgroup-specific history with radio tracking
 
 ### User Interface
-- Dark/Light theme support
-- Sortable talkgroup list (by ID, recent activity, call frequency)
-- Filter by talkgroup category
+- Dark/Light theme with mobile-friendly design
+- Sortable talkgroup list by various metrics
 - Show/hide inactive talkgroups
-- Mobile-friendly design
 
 ## Quick Installation
 
 ### Option 1: One-Click Installer (Recommended)
 1. Download and run the installer:
    ```bash
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/0c7361f/install.sh && chmod +x install.sh && ./install.sh
+   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/main/install.sh && chmod +x install.sh && ./install.sh
    ```
 2. The installer will:
    - Download and let you configure the .env file
@@ -44,7 +44,15 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
    - Verify the installation
    - Provide improved error handling and validation
 
-3. Access the dashboard at http://localhost:3000 (or your configured port)
+3. Configure your talkgroups:
+   - Option 1: Let the system auto-discover talkgroups as they appear
+   - Option 2: Download CSV from Radio Reference and place in data/talkgroups/
+
+4. Configure trunk-recorder:
+   - Copy log_mongo_http.sh to your trunk-recorder directory
+   - Add unitScript to your trunk-recorder config.json
+
+5. Access the dashboard at http://localhost:3000 (or your configured port)
 
 ### Option 2: Manual Installation
 1. Install Docker on your system:
@@ -132,87 +140,14 @@ RADIOS_FILE=/path/to/radios.csv
    }
    ```
 
-## Version History
-
-### Version 0.3.2
-- Improved trunk-recorder compatibility
-  - Updated CSV header format to match trunk-recorder
-  - Added default Mode of 'D'
-  - Added configurable external port
-  - Added radios file support
-- Improved installation process
-  - Added environment configuration step
-  - Allow editing .env before installation
-  - Better error handling and progress indicators
-- Updated documentation
-  - Added configuration options
-  - Improved installation instructions
-  - Added trunk-recorder compatibility notes
-
-### Version 0.3.1
-- Added category filtering with dynamic options
-- Added talkgroup hiding with confirmation dialog
-- Added hidden talkgroups management modal
-- Added unassociated talkgroup toggle
-- Improved system alias handling
-- Fixed system alias file preservation
-- Added better logging for system operations
-- Improved filter UI and styling
-- Enhanced error handling and feedback
-
-### Version 0.2.2
-- Added comprehensive installation error checking
-- Added automated diagnostic report generation
-- Added system requirement validation
-- Added container health monitoring
-- Improved installation process reliability
-- Enhanced troubleshooting documentation
-- Changed default installation directory
-- Added sanitized log collection
-
-### Version 0.2.1
-- Added multi-talkgroup metadata system with per-system files
-- Added system alias support via data/system-alias.csv
-- Added dynamic system filter list based on active systems
-- Added real-time alias and talkgroup file monitoring
-- Added automatic system name generation
-- Improved system filter UI with friendly names
-- Reorganized project into modular components
-- Added comprehensive development documentation
-- Improved error handling and logging
-- Added more detailed event history and radio tracking
-- Exposed more system metadata to users
-- Removed hardcoded county filters
-
-### Version 0.1.3
-- Removed external dependencies from log_mongo_http.sh
-- Improved error handling and logging
-- Added input validation for environment variables
-- Script now uses built-in tools instead of external utilities
-- Reorganized project structure for better maintainability
-- Added development environment with hot reloading
-- Moved MongoDB data under project data directory
-- Updated terminology to better reflect P25 systems
-
-### Version 0.1.2
-- Added multi-system talkgroup support
-- Improved file watching and reloading
-- Added dark/light theme support
-- Enhanced error handling
-
-### Version 0.1.1
-- Added historical data viewing
-- Improved real-time updates
-- Added sorting and filtering options
-- Enhanced UI responsiveness
-
-### Version 0.1.0
-- Initial release
-- Basic radio monitoring
-- Talkgroup management
-- Real-time updates
-
 ## Documentation
 
-- [Development Guide](docs/development.md): Project structure, setup, and technical details
+### Installation & Setup
+- [Quick Installation](README.md#quick-installation): One-click installer and Docker setup
+- [Manual Installation](docs/installation.md): Detailed guide for non-Docker setup
+- [Configuration](README.md#configuration): Environment variables and system setup
+
+### Development & Reference
+- [Development Guide](docs/development.md): Project structure and technical details
+- [Changelog](docs/changelog.md): Version history and updates
 - [Issues](https://github.com/LumenPrima/docker-trunk-recorder-dashboard/issues): Bug reports and feature requests
