@@ -14,14 +14,20 @@ export class TalkgroupManager {
 
     setMetadata(metadata) {
         this.metadata = metadata;
+        let hasNewSystems = false;
+        
         // Add systems from metadata to encounteredSystems
         Object.values(metadata).forEach(data => {
-            if (data.shortName) {
+            if (data.shortName && !this.encounteredSystems.has(data.shortName)) {
                 this.encounteredSystems.add(data.shortName);
-                console.log('Added system to encounteredSystems:', data.shortName);
+                hasNewSystems = true;
             }
         });
-        console.log('Current encounteredSystems:', Array.from(this.encounteredSystems));
+
+        // Emit event if new systems were added
+        if (hasNewSystems) {
+            window.socketIo.emit('systemsUpdated');
+        }
     }
 
     reset() {
@@ -40,8 +46,9 @@ export class TalkgroupManager {
         const radioId = event.radioID;
         const system = event.systemShortName || event.shortName;
 
-        if (system) {
+        if (system && !this.encounteredSystems.has(system)) {
             this.encounteredSystems.add(system);
+            window.socketIo.emit('systemsUpdated');
         }
 
         if (!this.talkgroups[talkgroup]) {

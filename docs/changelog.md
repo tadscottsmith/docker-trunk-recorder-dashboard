@@ -1,5 +1,11 @@
 # Version History
 
+### Version 0.3.8.1
+- Fixed system filter button updates
+  - Added proper system change detection
+  - Reduced unnecessary UI updates
+  - Fixed initial system list population
+
 ### Version 0.3.8
 - Improved Docker data handling
   - Fixed data directory persistence in Docker volumes

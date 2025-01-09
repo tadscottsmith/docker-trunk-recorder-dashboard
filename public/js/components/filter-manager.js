@@ -31,9 +31,17 @@ export class FilterManager {
         try {
             // Get current systems
             const systems = await this.talkgroupManager.getKnownSystems();
-            const currentSystemSet = new Set(systems.map(s => s.shortName));
+            
+            // Always refresh on first load
+            if (this.knownSystems.size === 0) {
+                console.log('Initial system list load...');
+                this.knownSystems = new Set(systems.map(s => s.shortName));
+                await this.refreshSystemList(systems);
+                return;
+            }
 
             // Check if the system list has changed
+            const currentSystemSet = new Set(systems.map(s => s.shortName));
             const hasChanges = systems.length !== this.knownSystems.size ||
                              [...currentSystemSet].some(s => !this.knownSystems.has(s)) ||
                              [...this.knownSystems].some(s => !currentSystemSet.has(s));
@@ -41,14 +49,14 @@ export class FilterManager {
             if (hasChanges) {
                 console.log('System list changed, refreshing...');
                 this.knownSystems = currentSystemSet;
-                await this.refreshSystemList();
+                await this.refreshSystemList(systems);
             }
         } catch (error) {
             console.error('Error checking systems:', error);
         }
     }
 
-    async refreshSystemList() {
+    async refreshSystemList(systems) {
         try {
             // Get and clear the system filter container
             const filterContainer = document.getElementById('systemFilter');
@@ -61,9 +69,6 @@ export class FilterManager {
             allButton.className = `system-button${!currentActiveSystem ? ' active' : ''}`;
             allButton.textContent = 'All';
             filterContainer.appendChild(allButton);
-            
-            // Get known systems with aliases
-            const systems = await this.talkgroupManager.getKnownSystems();
             
             // Create buttons for known systems
             systems.sort((a, b) => a.shortName.localeCompare(b.shortName)).forEach(system => {
@@ -175,7 +180,7 @@ export class FilterManager {
     async setupFilterControls() {
         try {
             // Initial system list setup and filter options
-            await this.refreshSystemList();
+            await this.checkAndUpdateSystems();
             this.updateFilterOptions();
 
             // Set up active filter toggle
