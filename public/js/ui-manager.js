@@ -12,7 +12,7 @@ export class UIManager {
         await this.filterManager.setupFilterControls();
     }
 
-    updateUI() {
+    async updateUI() {
         // Refresh system list when UI updates
         this.filterManager.refreshSystemList();
 
@@ -22,14 +22,21 @@ export class UIManager {
         const filterState = this.filterManager.getFilterState();
         const entries = this.talkgroupManager.getTalkgroupEntries(filterState);
 
-        for (const [talkgroup, radios] of entries) {
-            const card = this.talkgroupCard.create(talkgroup, radios);
+        // Create all cards asynchronously
+        const cardPromises = entries.map(async ([talkgroup, radios]) => {
+            const card = await this.talkgroupCard.create(talkgroup, radios);
             card.dataset.talkgroupId = talkgroup;
             if (filterState.excludedTalkgroups.has(talkgroup)) {
                 card.classList.add('excluded');
             }
-            container.appendChild(card);
-        }
+            return card;
+        });
+
+        // Wait for all cards to be created
+        const cards = await Promise.all(cardPromises);
+        
+        // Add all cards to container
+        cards.forEach(card => container.appendChild(card));
     }
 
 }

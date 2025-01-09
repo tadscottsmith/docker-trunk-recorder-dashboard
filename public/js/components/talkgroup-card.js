@@ -3,7 +3,7 @@ export class TalkgroupCard {
         this.talkgroupManager = talkgroupManager;
     }
 
-    create(talkgroup, radios) {
+    async create(talkgroup, radios) {
         const talkgroupDiv = document.createElement('div');
         const glowState = this.talkgroupManager.getGlowState(talkgroup);
         const glowClass = glowState ? ` glow-${glowState}` : '';
@@ -12,13 +12,14 @@ export class TalkgroupCard {
         // Add click handler for history view
         talkgroupDiv.addEventListener('click', () => this.showTalkgroupHistory(talkgroup));
         
-        talkgroupDiv.appendChild(this.createHeader(talkgroup));
+        const header = await this.createHeader(talkgroup);
+        talkgroupDiv.appendChild(header);
         talkgroupDiv.appendChild(this.createRadioContainer(talkgroup, radios));
         
         return talkgroupDiv;
     }
 
-    createHeader(talkgroup) {
+    async createHeader(talkgroup) {
         const headerDiv = document.createElement('div');
         headerDiv.className = 'talkgroup-header';
         
@@ -27,12 +28,18 @@ export class TalkgroupCard {
         const formattedTime = timestamp ? new Date(timestamp).toLocaleTimeString() : '';
         const stats = this.talkgroupManager.getCallStats(talkgroup);
         
+        // Get system alias if needed
+        let systemName = '';
+        if (metadata.shortName) {
+            systemName = await window.systemAliasService.getAlias(metadata.shortName);
+        }
+        
         headerDiv.innerHTML = `
             <div class="timestamp">${formattedTime}</div>
             <div>
                 <span class="talkgroup-title">${metadata.alphaTag || `Talkgroup ${talkgroup}`}</span>
                 <span class="talkgroup-tag">${metadata.tag || 'Unknown'}</span>
-                ${metadata.shortName ? `<span class="talkgroup-system">${metadata.shortName}</span>` : ''}
+                ${metadata.shortName ? `<span class="talkgroup-system">${systemName}</span>` : ''}
             </div>
             <div>
                 <span class="talkgroup-description">${metadata.description || 'Unknown'}</span>
