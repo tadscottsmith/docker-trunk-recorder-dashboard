@@ -1,5 +1,8 @@
 # Version History
 
+### Version 0.3.7.2
+- Fixed system alias file handling to properly preserve existing aliases when adding new systems
+
 ### Version 0.3.7.1
 - Fixed talkgroup file header validation to properly check for "Decimal" and "Alpha Tag" columns
 

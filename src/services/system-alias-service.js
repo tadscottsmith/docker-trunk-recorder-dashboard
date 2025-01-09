@@ -43,7 +43,7 @@ class SystemAliasService {
     }
 
     async addSystem(shortName) {
-        if (!shortName || this.aliasMap.has(shortName)) {
+        if (!shortName) {
             return;
         }
 
@@ -54,22 +54,37 @@ class SystemAliasService {
                 fs.mkdirSync(dir, { recursive: true });
             }
 
-            // Create file with header if it doesn't exist
-            if (!fs.existsSync(this.aliasFile)) {
-                fs.writeFileSync(this.aliasFile, 'shortName,alias\n', 'utf-8');
+            // Read existing content or create new file
+            let content = '';
+            if (fs.existsSync(this.aliasFile)) {
+                content = fs.readFileSync(this.aliasFile, 'utf-8');
             }
 
-            // Add new system
-            this.aliasMap.set(shortName, shortName);
-            
-            // Write all aliases to file
-            const content = ['shortName,alias'];
-            for (const [name, alias] of this.aliasMap.entries()) {
-                content.push(`${name},${alias}`);
+            // Parse existing systems
+            const lines = content.split('\n').filter(line => line.trim());
+            const header = lines[0]?.toLowerCase().includes('shortname,alias') ? lines[0] : 'shortName,alias';
+            const systems = new Map(
+                lines.slice(header === lines[0] ? 1 : 0)
+                    .map(line => {
+                        const [name, alias] = line.split(',').map(s => s.trim());
+                        return [name, alias || name];
+                    })
+                    .filter(([name]) => name)
+            );
+
+            // Add new system if not exists
+            if (!systems.has(shortName)) {
+                systems.set(shortName, shortName);
+                const newContent = [
+                    header,
+                    ...Array.from(systems.entries()).map(([name, alias]) => `${name},${alias}`)
+                ].join('\n');
+                await fs.promises.writeFile(this.aliasFile, newContent + '\n', 'utf-8');
+                console.log(`Added system ${shortName} to alias file`);
+
+                // Update local map
+                this.aliasMap = systems;
             }
-            
-            await fs.promises.writeFile(this.aliasFile, content.join('\n') + '\n', 'utf-8');
-            console.log(`Added system ${shortName} to alias file`);
         } catch (error) {
             console.error('Error adding system to alias file:', error);
         }
