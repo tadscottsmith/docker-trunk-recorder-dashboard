@@ -364,7 +364,7 @@ get_mapped_port() {
 timeout=30
 while [ $timeout -gt 0 ]; do
     # Get the actual mapped port for the dashboard container
-    MAPPED_PORT=$(get_mapped_port "trdash_dashboard_1" "3000")
+    MAPPED_PORT=$(get_mapped_port "dashboard_1" "3000")
     if [ -n "$MAPPED_PORT" ]; then
         if curl -s "http://localhost:${MAPPED_PORT}" >/dev/null; then
             echo -e "${GREEN}Services are ready!${NC}"
@@ -376,10 +376,11 @@ while [ $timeout -gt 0 ]; do
 done
 
 if [ $timeout -eq 0 ]; then
-    echo -e "${RED}✗ Services failed to start within 30 seconds${NC}"
-    echo -e "${YELLOW}→ Collecting logs for troubleshooting...${NC}"
+    echo -e "${YELLOW}Note: Services are taking longer than expected to start${NC}"
+    echo -e "${YELLOW}This is normal for the first run as containers initialize${NC}"
+    echo -e "${YELLOW}You can verify the status manually with: docker ps${NC}"
+    echo -e "${YELLOW}→ Collecting logs for reference...${NC}"
     gather_logs
-    echo -e "${RED}Please check the logs above for errors${NC}"
     exit 1
 fi
 
