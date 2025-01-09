@@ -12,6 +12,12 @@ export class TalkgroupManager {
 
     setMetadata(metadata) {
         this.metadata = metadata;
+        // Add systems from metadata to encounteredSystems
+        Object.values(metadata).forEach(data => {
+            if (data.shortName) {
+                this.encounteredSystems.add(data.shortName);
+            }
+        });
     }
 
     reset() {
