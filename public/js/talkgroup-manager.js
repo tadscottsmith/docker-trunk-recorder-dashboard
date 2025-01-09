@@ -16,8 +16,10 @@ export class TalkgroupManager {
         Object.values(metadata).forEach(data => {
             if (data.shortName) {
                 this.encounteredSystems.add(data.shortName);
+                console.log('Added system to encounteredSystems:', data.shortName);
             }
         });
+        console.log('Current encounteredSystems:', Array.from(this.encounteredSystems));
     }
 
     reset() {

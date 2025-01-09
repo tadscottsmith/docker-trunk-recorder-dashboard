@@ -13,6 +13,9 @@ export class UIManager {
     }
 
     updateUI() {
+        // Refresh system list when UI updates
+        this.filterManager.refreshSystemList();
+
         const container = document.getElementById('talkgroups');
         container.innerHTML = '';
 
