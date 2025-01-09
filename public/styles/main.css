@@ -475,30 +475,6 @@ body {
     z-index: 1;
 }
 
-/* Context Menu Hint */
-.talkgroup::after {
-    content: 'Right-click to hide';
-    position: absolute;
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--card-bg);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    color: var(--secondary-text);
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-    z-index: 2;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.talkgroup:hover::after {
-    opacity: 1;
-}
-
 /* Hidden Talkgroups List */
 .hidden-talkgroups-list {
     display: grid;

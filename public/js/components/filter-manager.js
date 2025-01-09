@@ -2,22 +2,27 @@ export class FilterManager {
     constructor(talkgroupManager, onFilterChange) {
         this.talkgroupManager = talkgroupManager;
         this.onFilterChange = onFilterChange;
-        this.showActiveOnly = false;
-        this.currentSort = 'id';
-        this.currentSystem = null;
-        this.excludedTalkgroups = new Set();
-        this.currentCategory = null;
-        this.showUnassociated = true;
         this.pendingExclude = null;
+        
+        // Load saved state or use defaults
+        const savedState = this.loadFilterState();
+        this.showActiveOnly = savedState.showActiveOnly ?? false;
+        this.currentSort = savedState.currentSort ?? 'id';
+        this.currentSystem = savedState.currentSystem ?? null;
+        this.excludedTalkgroups = new Set(savedState.excludedTalkgroups ?? []);
+        this.currentCategory = savedState.currentCategory ?? null;
+        this.currentTag = savedState.currentTag ?? null;
+        this.showUnassociated = savedState.showUnassociated ?? true;
 
         // Listen for system list updates
         window.socketIo.on('systemsUpdated', () => {
             this.refreshSystemList();
         });
 
-        // Listen for talkgroups reloaded to check for new systems
+        // Listen for talkgroups reloaded to check for new systems and update filters
         window.socketIo.on('talkgroupsReloaded', () => {
             this.refreshSystemList();
+            this.updateFilterOptions();
         });
     }
 
@@ -64,51 +69,128 @@ export class FilterManager {
                     this.currentSystem = button.dataset.system;
                     this.talkgroupManager.setShortNameFilter(this.currentSystem);
                 }
+                this.saveFilterState();
                 this.onFilterChange();
             });
         });
     }
 
+    updateFilterOptions() {
+        // Update category options
+        const categorySelect = document.getElementById('categoryFilter');
+        if (categorySelect) {
+            // Get unique categories from all metadata
+            const categories = new Set();
+            Object.values(this.talkgroupManager.metadata).forEach(metadata => {
+                if (metadata?.category) {
+                    categories.add(metadata.category);
+                }
+            });
+
+            // Keep current selection
+            const currentValue = categorySelect.value;
+
+            // Clear and populate select
+            categorySelect.innerHTML = '<option value="all">All Categories</option>';
+            Array.from(categories).sort().forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+
+            // Restore selection if still valid, otherwise reset to 'all'
+            if (Array.from(categories).includes(currentValue)) {
+                categorySelect.value = currentValue;
+            } else {
+                categorySelect.value = 'all';
+                this.currentCategory = null;
+                this.saveFilterState();
+            }
+        }
+
+        // Update tag options
+        const tagSelect = document.getElementById('tagFilter');
+        if (tagSelect) {
+            // Get unique tags from all metadata
+            const tags = new Set();
+            Object.values(this.talkgroupManager.metadata).forEach(metadata => {
+                if (metadata?.tag) {
+                    tags.add(metadata.tag);
+                }
+            });
+
+            // Keep current selection
+            const currentValue = tagSelect.value;
+
+            // Clear and populate select
+            tagSelect.innerHTML = '<option value="all">All Tags</option>';
+            Array.from(tags).sort().forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                tagSelect.appendChild(option);
+            });
+
+            // Restore selection if still valid, otherwise reset to 'all'
+            if (Array.from(tags).includes(currentValue)) {
+                tagSelect.value = currentValue;
+            } else {
+                tagSelect.value = 'all';
+                this.currentTag = null;
+                this.saveFilterState();
+            }
+        }
+    }
+
     async setupFilterControls() {
         try {
-            // Initial system list setup
+            // Initial system list setup and filter options
             await this.refreshSystemList();
+            this.updateFilterOptions();
 
             // Set up active filter toggle
             const filterButton = document.getElementById('filterButton');
             if (filterButton) {
                 filterButton.addEventListener('click', () => this.toggleFilter());
+                // Set initial state
+                filterButton.classList.toggle('active', this.showActiveOnly);
+                filterButton.textContent = this.showActiveOnly ? 'Show All' : 'Show Active Only';
             }
 
             // Set up sort buttons
             document.querySelectorAll('.sort-button').forEach(button => {
                 button.addEventListener('click', () => this.setSort(button.dataset.sort));
+                // Set initial state
+                button.classList.toggle('active', button.dataset.sort === this.currentSort);
             });
 
             // Set up category filter
             const categorySelect = document.getElementById('categoryFilter');
             if (categorySelect) {
-                // Get unique categories from active/seen talkgroups
-                const categories = new Set();
-                const activeTalkgroups = this.talkgroupManager.getActiveTalkgroups();
-                activeTalkgroups.forEach(talkgroup => {
-                    const metadata = this.talkgroupManager.getMetadata(talkgroup);
-                    if (metadata?.category) {
-                        categories.add(metadata.category);
-                    }
-                });
-
-                // Clear and populate select
-                categorySelect.innerHTML = '<option value="all">All Categories</option>';
-                Array.from(categories).sort().forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category;
-                    option.textContent = category;
-                    categorySelect.appendChild(option);
-                });
+                // Set initial state
+                if (this.currentCategory) {
+                    categorySelect.value = this.currentCategory;
+                }
 
                 categorySelect.addEventListener('change', (e) => {
                     this.currentCategory = e.target.value === 'all' ? null : e.target.value;
+                    this.saveFilterState();
+                    this.onFilterChange();
+                });
+            }
+
+            // Set up tag filter
+            const tagSelect = document.getElementById('tagFilter');
+            if (tagSelect) {
+                // Set initial state
+                if (this.currentTag) {
+                    tagSelect.value = this.currentTag;
+                }
+
+                tagSelect.addEventListener('change', (e) => {
+                    this.currentTag = e.target.value === 'all' ? null : e.target.value;
+                    this.saveFilterState();
                     this.onFilterChange();
                 });
             }
@@ -117,12 +199,17 @@ export class FilterManager {
             const unassociatedButton = document.getElementById('unassociatedButton');
             if (unassociatedButton) {
                 unassociatedButton.addEventListener('click', () => this.toggleUnassociated());
+                // Set initial state
+                unassociatedButton.classList.toggle('active', this.showUnassociated);
+                unassociatedButton.textContent = this.showUnassociated ? 'Hide Unknown' : 'Show Unknown';
             }
 
             // Set up hidden talkgroups button
             const hiddenButton = document.getElementById('hiddenTalkgroupsButton');
             if (hiddenButton) {
                 hiddenButton.addEventListener('click', () => this.showHiddenTalkgroups());
+                // Update initial count
+                this.updateHiddenCount();
             }
 
             // Set up talkgroup exclusion
@@ -130,8 +217,13 @@ export class FilterManager {
                 const talkgroupElement = e.target.closest('.talkgroup');
                 if (talkgroupElement) {
                     e.preventDefault();
+                    e.stopPropagation(); // Prevent other context menus
                     const talkgroupId = talkgroupElement.dataset.talkgroupId;
-                    this.confirmHideTalkgroup(talkgroupId);
+                    if (talkgroupId) {
+                        this.confirmHideTalkgroup(talkgroupId);
+                    } else {
+                        console.error('No talkgroup ID found for element:', talkgroupElement);
+                    }
                 }
             });
 
@@ -172,6 +264,7 @@ export class FilterManager {
         const button = document.getElementById('filterButton');
         button.classList.toggle('active');
         button.textContent = this.showActiveOnly ? 'Show All' : 'Show Active Only';
+        this.saveFilterState();
         this.onFilterChange();
     }
 
@@ -179,11 +272,14 @@ export class FilterManager {
         this.showUnassociated = !this.showUnassociated;
         const button = document.getElementById('unassociatedButton');
         button.classList.toggle('active');
-        button.textContent = this.showUnassociated ? 'Hide Unassociated' : 'Show Unassociated';
+        button.textContent = this.showUnassociated ? 'Hide Unknown' : 'Show Unknown';
+        this.saveFilterState();
         this.onFilterChange();
     }
 
     confirmHideTalkgroup(talkgroupId) {
+        // Convert talkgroupId to string for consistent comparison
+        talkgroupId = String(talkgroupId);
         const metadata = this.talkgroupManager.getMetadata(talkgroupId);
         const name = metadata.alphaTag || `Talkgroup ${talkgroupId}`;
         
@@ -196,12 +292,15 @@ export class FilterManager {
     }
 
     toggleExcludedTalkgroup(talkgroupId) {
+        // Convert talkgroupId to string for consistent comparison
+        talkgroupId = String(talkgroupId);
         if (this.excludedTalkgroups.has(talkgroupId)) {
             this.excludedTalkgroups.delete(talkgroupId);
         } else {
             this.excludedTalkgroups.add(talkgroupId);
         }
         this.updateHiddenCount();
+        this.saveFilterState();
         this.onFilterChange();
     }
 
@@ -261,6 +360,7 @@ export class FilterManager {
         document.querySelectorAll('.sort-button').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.sort === sortBy);
         });
+        this.saveFilterState();
         this.onFilterChange();
     }
 
@@ -270,7 +370,38 @@ export class FilterManager {
             sortBy: this.currentSort,
             excludedTalkgroups: this.excludedTalkgroups,
             currentCategory: this.currentCategory,
+            currentTag: this.currentTag,
             showUnassociated: this.showUnassociated
         };
+    }
+
+    saveFilterState() {
+        const state = {
+            showActiveOnly: this.showActiveOnly,
+            currentSort: this.currentSort,
+            currentSystem: this.currentSystem,
+            excludedTalkgroups: Array.from(this.excludedTalkgroups),
+            currentCategory: this.currentCategory,
+            currentTag: this.currentTag,
+            showUnassociated: this.showUnassociated
+        };
+        localStorage.setItem('filterState', JSON.stringify(state));
+    }
+
+    loadFilterState() {
+        try {
+            const savedState = localStorage.getItem('filterState');
+            if (!savedState) return {};
+            
+            const state = JSON.parse(savedState);
+            // Convert excludedTalkgroups to strings for consistent comparison
+            if (state.excludedTalkgroups) {
+                state.excludedTalkgroups = state.excludedTalkgroups.map(String);
+            }
+            return state;
+        } catch (error) {
+            console.error('Error loading filter state:', error);
+            return {};
+        }
     }
 }

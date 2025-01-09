@@ -76,22 +76,6 @@ export class TalkgroupManager {
         );
     }
 
-    calculateFrequency(talkgroup) {
-        const stats = this.callStats[talkgroup];
-        if (!stats || !stats.timestamps.length) return '0.0';
-        
-        const now = new Date();
-        const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
-        const recentTimestamps = stats.timestamps.filter(ts => ts >= fiveMinutesAgo);
-        
-        if (!recentTimestamps.length) return '0.0';
-        
-        const timeSpanMinutes = Math.min(5, (now - recentTimestamps[0]) / (1000 * 60));
-        const frequency = recentTimestamps.length / timeSpanMinutes;
-        
-        return frequency.toFixed(1);
-    }
-
     setShortNameFilter(shortName) {
         this.shortNameFilter = shortName;
     }
@@ -100,7 +84,7 @@ export class TalkgroupManager {
         this.shortNameFilter = null;
     }
 
-    getTalkgroupEntries({ showActiveOnly = false, sortBy = 'id', excludedTalkgroups = new Set(), currentCategory = null, showUnassociated = true }) {
+    getTalkgroupEntries({ showActiveOnly = false, sortBy = 'id', excludedTalkgroups = new Set(), currentCategory = null, currentTag = null, showUnassociated = true }) {
         let entries = Object.entries(this.talkgroups);
         
         // Filter by shortName if set
@@ -125,11 +109,25 @@ export class TalkgroupManager {
             });
         }
 
-        // Filter unassociated talkgroups
+        // Filter by tag
+        if (currentTag) {
+            entries = entries.filter(([talkgroup]) => {
+                const metadata = this.metadata[talkgroup];
+                return metadata?.tag === currentTag;
+            });
+        }
+
+        // Filter unassociated talkgroups (those without meaningful metadata)
         if (!showUnassociated) {
             entries = entries.filter(([talkgroup]) => {
                 const metadata = this.metadata[talkgroup];
-                return metadata && Object.keys(metadata).length > 0;
+                // Consider a talkgroup "associated" if it has any of these meaningful metadata fields
+                return metadata && (
+                    metadata.alphaTag || 
+                    metadata.description || 
+                    metadata.category || 
+                    metadata.tag
+                );
             });
         }
         
@@ -155,13 +153,6 @@ export class TalkgroupManager {
                     const timeA = this.timestamps[a] ? new Date(this.timestamps[a]).getTime() : 0;
                     const timeB = this.timestamps[b] ? new Date(this.timestamps[b]).getTime() : 0;
                     return timeB - timeA || parseInt(a) - parseInt(b);
-                });
-                break;
-            case 'frequency':
-                entries.sort(([a], [b]) => {
-                    const freqA = parseFloat(this.calculateFrequency(a)) || 0;
-                    const freqB = parseFloat(this.calculateFrequency(b)) || 0;
-                    return freqB - freqA || parseInt(a) - parseInt(b);
                 });
                 break;
             case 'id':
