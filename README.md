@@ -35,8 +35,7 @@ A real-time web dashboard for monitoring trunk-recorder radio activity. View liv
 ### Option 1: One-Click Installer (Recommended)
 1. Create a new directory and run the installer:
    ```bash
-   mkdir trunk-dashboard && cd trunk-dashboard
-   curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/main/scripts/install.sh && chmod +x install.sh && ./install.sh
+   mkdir tr-dashboard && cd tr-dashboard && curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/main/scripts/install.sh && chmod +x install.sh && ./install.sh
    ```
 2. The installer will:
    - Download and let you configure the .env file
