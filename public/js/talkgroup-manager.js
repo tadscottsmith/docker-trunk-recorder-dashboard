@@ -36,7 +36,7 @@ export class TalkgroupManager {
     handleEvent(event) {
         const talkgroup = event.talkgroupOrSource;
         const radioId = event.radioID;
-        const system = event.shortName;
+        const system = event.systemShortName || event.shortName;
 
         if (system) {
             this.encounteredSystems.add(system);
@@ -64,7 +64,7 @@ export class TalkgroupManager {
             this.talkgroups[talkgroup].add(radioId);
             this.radioStates[talkgroup][radioId] = {
                 eventType: event.eventType,
-                shortName: event.shortName
+                shortName: event.systemShortName || event.shortName
             };
         }
 
