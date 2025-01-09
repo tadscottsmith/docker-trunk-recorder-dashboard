@@ -198,6 +198,36 @@ class TalkgroupService {
 
         if (systemShortName) {
             this.knownSystems.add(systemShortName);
+            // Add system to alias file if not already there
+            const aliasPath = path.join('data', 'system-alias.csv');
+            try {
+                let content = '';
+                if (fs.existsSync(aliasPath)) {
+                    content = fs.readFileSync(aliasPath, 'utf-8');
+                }
+                const lines = content.split('\n').filter(line => line.trim());
+                const header = lines[0]?.toLowerCase().includes('shortname,alias') ? lines[0] : 'shortName,alias';
+                const systems = new Map(
+                    lines.slice(header === lines[0] ? 1 : 0)
+                        .map(line => {
+                            const [shortName, alias] = line.split(',').map(s => s.trim());
+                            return [shortName, alias];
+                        })
+                        .filter(([shortName]) => shortName)
+                );
+
+                // Add new system if not exists
+                if (!systems.has(systemShortName)) {
+                    systems.set(systemShortName, systemShortName);
+                    const newContent = [
+                        header,
+                        ...Array.from(systems.entries()).map(([shortName, alias]) => `${shortName},${alias}`)
+                    ].join('\n');
+                    fs.writeFileSync(aliasPath, newContent, 'utf-8');
+                }
+            } catch (error) {
+                console.error('Error updating system alias file:', error);
+            }
         }
 
         return changed ? this.saveTalkgroups(systemShortName) : Promise.resolve();
