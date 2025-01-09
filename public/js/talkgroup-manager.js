@@ -191,4 +191,12 @@ export class TalkgroupManager {
     getCallStats(talkgroup) {
         return this.callStats[talkgroup] || { count: 0 };
     }
+
+    getKnownSystems() {
+        // Convert encounteredSystems to array of objects with shortName and displayName
+        return Array.from(this.encounteredSystems).map(shortName => ({
+            shortName,
+            displayName: shortName // Use shortName as displayName until alias is set
+        }));
+    }
 }
