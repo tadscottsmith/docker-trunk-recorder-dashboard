@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -7,17 +5,17 @@ services:
     command: [
       "--replSet", "rs0",
       "--bind_ip_all",
-      "--setParameter", "enableTestCommands=1"
+      "--setParameter", "enableTestCommands=1",
+      "--setParameter", "diagnosticDataCollectionEnabled=false"
     ]
-    volumes:
-      - mongodb_data:/data/db
     networks:
       - trunk_network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "'db.runCommand(\"ping\").ok'"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   dashboard:
     build:
@@ -25,19 +23,32 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${DASHBOARD_PORT:-3000}:3000"
     volumes:
-      - ./examples/talkgroups.csv:/app/talkgroups.csv
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./data:/app/data
+      - ${RADIOS_FILE:-./data/radios.csv}:/app/data/radios.csv:ro
+      - ./package.json:/app/package.json
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/?replicaSet=rs0&directConnection=true
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
-      - TALKGROUP_FILE=/app/talkgroups.csv
-      - COUNTY_FILTERS=${COUNTY_FILTERS:-hamco|Hamilton,warco|Warren,butco|Butler,monco|Montgomery}
+      - SYSTEM_FILTERS=${SYSTEM_FILTERS:-hamco|Hamilton P25,warco|Warren P25,butco|Butler P25,monco|Montgomery P25}
+      - NODE_ENV=development
+      - UID=${UID:-1000}
+      - GID=${GID:-1000}
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - trunk_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
 
   ingest:
     build:
@@ -51,54 +62,40 @@ services:
       - DB_NAME=trunk_recorder
       - COLLECTION_NAME=radio_events
       - HTTP_MONGO_PORT=3001
+      - UID=${UID:-1000}
+      - GID=${GID:-1000}
+    user: "${UID:-1000}:${GID:-1000}"
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - trunk_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
 
-  # Initialize MongoDB Replica Set
+  # One-time MongoDB initialization
   mongo-init:
     image: mongo:latest
     restart: "no"
+    profiles: ["init"]
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
     command: >
-      bash -c "
-        echo 'Waiting for MongoDB to start...' &&
-        until mongosh --host mongodb:27017 --eval 'db.runCommand(\"ping\").ok' >/dev/null 2>&1; do
-          echo 'Waiting for MongoDB to be ready...'
-          sleep 2
-        done &&
-        echo 'MongoDB is ready, initializing replica set...' &&
-        mongosh --host mongodb:27017 --eval '
-          config = {
-            _id: \"rs0\",
-            members: [
-              { _id: 0, host: \"mongodb:27017\", priority: 1 }
-            ],
-            settings: {
-              chainingAllowed: true,
-              heartbeatTimeoutSecs: 10,
-              electionTimeoutMillis: 10000,
-              catchUpTimeoutMillis: -1
-            }
-          };
-          rs.initiate(config);
-        ' &&
-        echo 'Waiting for replica set to be ready...' &&
-        until mongosh --host mongodb:27017 --eval 'rs.status().ok && rs.status().members.length > 0 && rs.status().members[0].stateStr === \"PRIMARY\"' >/dev/null 2>&1; do
-          echo 'Waiting for replica set to be ready...'
-          sleep 2
-        done &&
-        echo 'Replica set is ready and PRIMARY'
-      "
+      bash -c '
+        echo "Waiting for MongoDB to start..." &&
+        sleep 10 &&
+        mongosh --host mongodb:27017 /docker-entrypoint-initdb.d/mongo-init.js
+      '
     networks:
       - trunk_network
 
 networks:
   trunk_network:
     driver: bridge
-
-volumes:
-  mongodb_data:
-    driver: local

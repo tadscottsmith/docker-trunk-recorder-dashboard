@@ -7,6 +7,7 @@ export class TalkgroupManager {
         this.glowStates = {};
         this.callStats = {};
         this.shortNameFilter = null;
+        this.encounteredSystems = new Set();
     }
 
     setMetadata(metadata) {
@@ -27,6 +28,11 @@ export class TalkgroupManager {
     handleEvent(event) {
         const talkgroup = event.talkgroupOrSource;
         const radioId = event.radioID;
+        const system = event.shortName;
+
+        if (system) {
+            this.encounteredSystems.add(system);
+        }
 
         if (!this.talkgroups[talkgroup]) {
             this.talkgroups[talkgroup] = new Set();
@@ -94,20 +100,36 @@ export class TalkgroupManager {
         this.shortNameFilter = null;
     }
 
-    getTalkgroupEntries(showActiveOnly = false, sortBy = 'id') {
+    getTalkgroupEntries({ showActiveOnly = false, sortBy = 'id', excludedTalkgroups = new Set(), currentCategory = null, showUnassociated = true }) {
         let entries = Object.entries(this.talkgroups);
         
         // Filter by shortName if set
         if (this.shortNameFilter) {
             entries = entries.filter(([talkgroup]) => {
-                // Look through all events for this talkgroup to find matching shortName
                 const radioStates = this.radioStates[talkgroup];
                 if (!radioStates) return false;
-                
-                // Check if any radio in this talkgroup has the matching shortName
                 return Object.values(radioStates).some(state => 
                     state.shortName === this.shortNameFilter
                 );
+            });
+        }
+        
+        // Filter excluded talkgroups
+        entries = entries.filter(([talkgroup]) => !excludedTalkgroups.has(talkgroup));
+
+        // Filter by category
+        if (currentCategory) {
+            entries = entries.filter(([talkgroup]) => {
+                const metadata = this.metadata[talkgroup];
+                return metadata?.category === currentCategory;
+            });
+        }
+
+        // Filter unassociated talkgroups
+        if (!showUnassociated) {
+            entries = entries.filter(([talkgroup]) => {
+                const metadata = this.metadata[talkgroup];
+                return metadata && Object.keys(metadata).length > 0;
             });
         }
         
@@ -122,21 +144,25 @@ export class TalkgroupManager {
         // Sort entries based on selected method
         switch (sortBy) {
             case 'calls':
-                entries.sort(([a], [b]) => 
-                    (this.callStats[b]?.count || 0) - (this.callStats[a]?.count || 0)
-                );
+                entries.sort(([a], [b]) => {
+                    const countA = this.callStats[a]?.count || 0;
+                    const countB = this.callStats[b]?.count || 0;
+                    return countB - countA || parseInt(a) - parseInt(b);
+                });
                 break;
             case 'recent':
                 entries.sort(([a], [b]) => {
-                    const timeA = this.timestamps[a] ? new Date(this.timestamps[a]) : new Date(0);
-                    const timeB = this.timestamps[b] ? new Date(this.timestamps[b]) : new Date(0);
-                    return timeB - timeA;
+                    const timeA = this.timestamps[a] ? new Date(this.timestamps[a]).getTime() : 0;
+                    const timeB = this.timestamps[b] ? new Date(this.timestamps[b]).getTime() : 0;
+                    return timeB - timeA || parseInt(a) - parseInt(b);
                 });
                 break;
             case 'frequency':
-                entries.sort(([a], [b]) => 
-                    parseFloat(this.calculateFrequency(b)) - parseFloat(this.calculateFrequency(a))
-                );
+                entries.sort(([a], [b]) => {
+                    const freqA = parseFloat(this.calculateFrequency(a)) || 0;
+                    const freqB = parseFloat(this.calculateFrequency(b)) || 0;
+                    return freqB - freqA || parseInt(a) - parseInt(b);
+                });
                 break;
             case 'id':
             default:
