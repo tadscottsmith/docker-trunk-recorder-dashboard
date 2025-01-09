@@ -347,17 +347,24 @@ echo -e "${YELLOW}→ Checking container status...${NC}"
 DASHBOARD_PORT=$(get_dashboard_port)
 
 # Get the actual mapped port from Docker
+get_project_name() {
+    # Get the current directory name and convert to lowercase
+    # Preserve existing underscores, replace other special chars with underscores
+    basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]/_/g'
+}
+
 get_mapped_port() {
     local container=$1
     local port=$2
-    docker port "${container}" "${port}" 2>/dev/null | cut -d ':' -f2
+    local project_name=$(get_project_name)
+    docker port "${project_name}_${container}" "${port}" 2>/dev/null | cut -d ':' -f2
 }
 
 # Wait for services to be ready (timeout after 30 seconds)
 timeout=30
 while [ $timeout -gt 0 ]; do
     # Get the actual mapped port for the dashboard container
-    MAPPED_PORT=$(get_mapped_port "installscript_dashboard_1" "3000")
+    MAPPED_PORT=$(get_mapped_port "trdash_dashboard_1" "3000")
     if [ -n "$MAPPED_PORT" ]; then
         if curl -s "http://localhost:${MAPPED_PORT}" >/dev/null; then
             echo -e "${GREEN}Services are ready!${NC}"
