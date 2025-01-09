@@ -27,30 +27,37 @@ export class FilterManager {
     }
 
     async refreshSystemList() {
-        // Get and clear the system filter container
-        const filterContainer = document.getElementById('systemFilter');
-        const currentActiveSystem = filterContainer.querySelector('.system-button.active')?.dataset.system;
-        filterContainer.innerHTML = '';
-        
-        // Create "All" button
-        const allButton = document.createElement('button');
-        allButton.id = 'allSystems';
-        allButton.className = `system-button${!currentActiveSystem ? ' active' : ''}`;
-        allButton.textContent = 'All';
-        filterContainer.appendChild(allButton);
-        
-        // Create buttons for encountered systems
-        Array.from(this.talkgroupManager.encounteredSystems).sort().forEach(system => {
-            const button = document.createElement('button');
-            button.id = `${system}Filter`;
-            button.className = `system-button${currentActiveSystem === system ? ' active' : ''}`;
-            button.dataset.system = system;
-            button.textContent = system;
-            filterContainer.appendChild(button);
-        });
+        try {
+            // Get and clear the system filter container
+            const filterContainer = document.getElementById('systemFilter');
+            const currentActiveSystem = filterContainer.querySelector('.system-button.active')?.dataset.system;
+            filterContainer.innerHTML = '';
+            
+            // Create "All" button
+            const allButton = document.createElement('button');
+            allButton.id = 'allSystems';
+            allButton.className = `system-button${!currentActiveSystem ? ' active' : ''}`;
+            allButton.textContent = 'All';
+            filterContainer.appendChild(allButton);
+            
+            // Get known systems with aliases
+            const systems = await this.talkgroupManager.getKnownSystems();
+            
+            // Create buttons for known systems
+            systems.sort((a, b) => a.shortName.localeCompare(b.shortName)).forEach(system => {
+                const button = document.createElement('button');
+                button.id = `${system.shortName}Filter`;
+                button.className = `system-button${currentActiveSystem === system.shortName ? ' active' : ''}`;
+                button.dataset.system = system.shortName;
+                button.textContent = system.displayName;
+                filterContainer.appendChild(button);
+            });
 
-        // Set up click handlers
-        this.setupSystemButtonHandlers();
+            // Set up click handlers
+            this.setupSystemButtonHandlers();
+        } catch (error) {
+            console.error('Error refreshing system list:', error);
+        }
     }
 
     setupSystemButtonHandlers() {
