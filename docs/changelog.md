@@ -1,5 +1,8 @@
 # Version History
 
+### Version 0.3.7.1
+- Fixed talkgroup file header validation to properly check for "Decimal" and "Alpha Tag" columns
+
 ### Version 0.3.7
 - Improved data file handling
   - Removed talkgroups.csv and system-alias.csv from repository

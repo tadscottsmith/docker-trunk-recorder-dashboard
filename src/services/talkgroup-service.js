@@ -117,13 +117,11 @@ class TalkgroupService {
 
             // Find the header line
             const headerIndex = csvLines.findIndex(line => {
-                const lowerLine = line.toLowerCase();
-                return lowerLine.includes('decimal') && 
-                       (lowerLine.includes('alpha tag') || lowerLine.includes('alphatag'));
+                return line.includes('Decimal') && line.includes('Alpha Tag');
             });
             
             if (headerIndex === -1) {
-                console.error(`Error: ${filePath} must have a header with at least "decimal" and "alphaTag" columns`);
+                console.error(`Error: ${filePath} must have a header with at least "Decimal" and "Alpha Tag" columns`);
                 return;
             }
 
