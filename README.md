@@ -102,7 +102,26 @@ RADIOS_FILE=/path/to/radios.csv
    chmod +x /path/to/trunk-recorder/log_mongo_http.sh
    ```
 
-   Optional: If you're monitoring many talkgroups or seeing "too many open files" errors on Linux, you may want to increase the system's file handle limits:
+   Optional: If you're monitoring many talkgroups or seeing "too many open files" errors, you may need to increase file handle limits:
+
+   For trunk-recorder Docker installations (not needed for the dashboard container):
+   ```yaml
+   # Add to the trunk-recorder container in your trunk-recorder's docker-compose.yml
+   # Note: This is for the trunk-recorder container, not the dashboard container
+   services:
+     trunk-recorder:    # Your trunk-recorder container name
+       ulimits:
+         nofile:
+           soft: 64000
+           hard: 64000
+   ```
+   Or if using docker run for trunk-recorder:
+   ```bash
+   # For trunk-recorder container only
+   docker run --ulimit nofile=64000:64000 ...other-options... trunk-recorder
+   ```
+
+   For non-Docker Linux installations:
    ```bash
    # Increase system file handle limits
    sudo sh -c 'echo "* soft nofile 64000" >> /etc/security/limits.conf'
@@ -116,7 +135,7 @@ RADIOS_FILE=/path/to/radios.csv
    ulimit -n
    ```
    
-   Note: The script uses file descriptors for network connections. The default limits are usually sufficient, but busy systems with many simultaneous events might need higher limits. You'll need to log out and back in for permanent changes to take effect.
+   Note: The script uses file descriptors for network connections. The default limits are usually sufficient, but busy systems with many simultaneous events might need higher limits. For system-wide changes, you'll need to log out and back in for them to take effect.
 
 2. Configure script behavior (optional):
    ```bash
