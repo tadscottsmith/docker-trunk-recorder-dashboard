@@ -220,6 +220,26 @@ class TalkgroupService {
         this.talkgroupsMap.clear();
         this.unknownTalkgroups.clear();
     }
+
+    // Get history for a specific talkgroup
+    async getTalkgroupHistory(talkgroupId) {
+        try {
+            const mongodbService = require('./mongodb-service');
+            const result = await mongodbService.getTalkgroupHistory(talkgroupId);
+            
+            return {
+                events: result.events.map(event => ({
+                    eventType: event.eventType || 'call',
+                    radioID: event.radioID,
+                    timestamp: event.timestamp
+                })),
+                uniqueRadios: result.uniqueRadios
+            };
+        } catch (error) {
+            console.error(`Error getting history for talkgroup ${talkgroupId}:`, error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new TalkgroupService();
