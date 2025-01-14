@@ -2,6 +2,24 @@
 
 ⚠️ **PRE-ALPHA WARNING**: This project is in pre-alpha stage and is not ready for production use. Features and APIs may change significantly between versions.
 
+### Version 0.3.11
+- Improved MongoDB initialization and reliability
+  - Added dedicated initialization service for first-time setup
+  - Improved replica set configuration with proper hostname
+  - Enhanced MongoDB healthcheck for reliable restarts
+  - Added comprehensive Docker installation guide
+  - Fixed talkgroup history functionality
+
+### Version 0.3.10
+- Fixed talkgroup history functionality
+  - Restored click-to-view event history for talkgroups
+  - Fixed MongoDB connection handling in talkgroup service
+  - Improved error handling for database operations
+- Restored filtering functionality
+  - Fixed system and category filtering
+  - Improved filter state management
+  - Enhanced filter UI responsiveness
+
 ### Version 0.3.9
 - Improved log_mongo_http.sh script
   - Added configurable event type processing via PROCESS_EVENTS environment variable

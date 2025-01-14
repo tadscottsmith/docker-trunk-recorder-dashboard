@@ -6,16 +6,24 @@ services:
       "--replSet", "rs0",
       "--bind_ip_all",
       "--setParameter", "enableTestCommands=1",
-      "--setParameter", "diagnosticDataCollectionEnabled=false"
+      "--setParameter", "diagnosticDataCollectionEnabled=false",
+      "--oplogSize", "128",
+      "--wiredTigerCacheSizeGB", "1",
+      "--setParameter", "transactionLifetimeLimitSeconds=86400",
+      "--setParameter", "maxTransactionLockRequestTimeoutMillis=5000",
+      "--setParameter", "enableFlowControl=false"
     ]
+    volumes:
+      - ./data/mongodb:/data/db
+      - ./data/mongodb-config:/data/configdb
     networks:
       - trunk_network
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      test: ["CMD", "mongosh", "--eval", "try { rs.status().ok } catch(e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] }).ok }"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   dashboard:
     build:
@@ -78,7 +86,7 @@ services:
       retries: 3
       start_period: 90s
 
-  # One-time MongoDB initialization
+  # MongoDB initialization service - only runs during initial setup
   mongo-init:
     image: mongo:latest
     restart: "no"
@@ -90,9 +98,14 @@ services:
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
     command: >
       bash -c '
-        echo "Waiting for MongoDB to start..." &&
-        sleep 10 &&
-        mongosh --host mongodb:27017 /docker-entrypoint-initdb.d/mongo-init.js
+        echo "Waiting for MongoDB to be ready..." &&
+        until mongosh --quiet --host mongodb:27017 --eval "try { rs.status().ok } catch(e) { rs.initiate().ok }" > /dev/null 2>&1; do
+          sleep 2;
+          echo "Still waiting for MongoDB...";
+        done &&
+        echo "MongoDB is ready, initializing..." &&
+        mongosh --host mongodb:27017 /docker-entrypoint-initdb.d/mongo-init.js &&
+        echo "MongoDB initialization completed"
       '
     networks:
       - trunk_network
