@@ -1,5 +1,15 @@
 # Version History
 
+⚠️ **PRE-ALPHA WARNING**: This project is in pre-alpha stage and is not ready for production use. Features and APIs may change significantly between versions.
+
+### Version 0.3.9
+- Improved log_mongo_http.sh script
+  - Added configurable event type processing via PROCESS_EVENTS environment variable
+  - Improved file descriptor handling and cleanup
+  - Enhanced debug logging with detailed operation tracking
+  - Fixed JSON message format for better server compatibility
+  - Added comprehensive configuration documentation
+
 ### Version 0.3.8.1
 - Fixed system filter button updates
   - Added proper system change detection

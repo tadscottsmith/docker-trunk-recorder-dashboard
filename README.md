@@ -1,34 +1,8 @@
 # Trunk Recorder Dashboard
 
+⚠️ **PRE-ALPHA WARNING**: This project is in pre-alpha stage and is not ready for production use. Features and APIs may change significantly between versions.
+
 A real-time web dashboard for monitoring trunk-recorder radio activity. View live radio events, track talkgroups, and analyze historical data.
-
-## Features
-
-### Live Monitoring
-- Real-time display of radio activity with color-coded events
-- Active call indicators with live duration tracking
-- Automatic system recovery and status monitoring
-
-### Talkgroup Management
-- Multi-system support with automatic talkgroup discovery
-- Import from Radio Reference or auto-generate from activity
-- Tag-based organization with category filtering
-- Compatible with trunk-recorder CSV format
-
-### System Features
-- Dynamic system alias management and configuration
-- Per-system talkgroup file support
-- Real-time file monitoring and updates
-
-### Historical Analysis
-- Configurable time ranges from 30 minutes to 12 hours
-- Call frequency analysis and event filtering
-- Talkgroup-specific history with radio tracking
-
-### User Interface
-- Dark/Light theme with mobile-friendly design
-- Sortable talkgroup list by various metrics
-- Show/hide inactive talkgroups
 
 ## Quick Installation
 
@@ -128,7 +102,43 @@ RADIOS_FILE=/path/to/radios.csv
    chmod +x /path/to/trunk-recorder/log_mongo_http.sh
    ```
 
-2. Add to trunk-recorder's config.json:
+   Optional: If you're monitoring many talkgroups or seeing "too many open files" errors on Linux, you may want to increase the system's file handle limits:
+   ```bash
+   # Increase system file handle limits
+   sudo sh -c 'echo "* soft nofile 64000" >> /etc/security/limits.conf'
+   sudo sh -c 'echo "* hard nofile 64000" >> /etc/security/limits.conf'
+   sudo sh -c 'echo "session required pam_limits.so" >> /etc/pam.d/common-session'
+   
+   # Apply changes immediately for current user
+   ulimit -n 64000
+   
+   # Verify new limits
+   ulimit -n
+   ```
+   
+   Note: The script uses file descriptors for network connections. The default limits are usually sufficient, but busy systems with many simultaneous events might need higher limits. You'll need to log out and back in for permanent changes to take effect.
+
+2. Configure script behavior (optional):
+   ```bash
+   # Default settings shown - modify as needed
+   export HTTP_HOST="localhost"     # Dashboard server address
+   export HTTP_PORT="3001"         # Dashboard server port
+   export DEBUG="false"           # Enable debug logging
+   export CONN_TIMEOUT="1"        # Connection timeout in seconds
+   export PROCESS_EVENTS="join,call"  # Event types to process
+   ```
+
+   By default, the script only processes 'join' and 'call' events to minimize system load, reduce network traffic, and limit the number of open files. These events provide the essential information for tracking radio activity. Additional event types can be enabled if needed:
+   - on: Radio unit registration
+   - join: Talk group affiliation
+   - off: Radio unit deregistration
+   - ackresp: Acknowledgment response
+   - call: Radio transmission
+   - data: Data channel grant
+   - ans_req: Unit-unit answer request
+   - location: Location registration response
+
+3. Add to trunk-recorder's config.json:
    ```json
    {
        "shortName": "your-system-name",

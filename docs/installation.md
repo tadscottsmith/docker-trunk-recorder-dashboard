@@ -183,7 +183,27 @@ This guide provides detailed instructions for installing and configuring the Tru
    chmod +x /path/to/trunk-recorder/log_mongo_http.sh
    ```
 
-2. Add to trunk-recorder's config.json:
+2. Configure environment variables for log_mongo_http.sh (optional):
+   ```bash
+   # Default settings shown - modify as needed
+   export HTTP_HOST="localhost"     # Dashboard server address
+   export HTTP_PORT="3001"         # Dashboard server port
+   export DEBUG="false"           # Enable debug logging
+   export CONN_TIMEOUT="1"        # Connection timeout in seconds
+   export PROCESS_EVENTS="join,call"  # Event types to process
+   ```
+
+   Available event types for PROCESS_EVENTS:
+   - on: Radio unit registration
+   - join: Talk group affiliation
+   - off: Radio unit deregistration
+   - ackresp: Acknowledgment response
+   - call: Radio transmission
+   - data: Data channel grant
+   - ans_req: Unit-unit answer request
+   - location: Location registration response
+
+3. Add to trunk-recorder's config.json:
    ```json
    {
        "shortName": "your-system-name",
