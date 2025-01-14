@@ -14,7 +14,8 @@ export class UIManager {
 
     async updateUI() {
         // Refresh system list when UI updates
-        this.filterManager.refreshSystemList();
+        const systems = await this.talkgroupManager.getKnownSystems();
+        await this.filterManager.refreshSystemList(systems);
 
         const container = document.getElementById('talkgroups');
         container.innerHTML = '';

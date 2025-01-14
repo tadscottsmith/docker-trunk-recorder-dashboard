@@ -1,4 +1,4 @@
-const systemAliasService = window.systemAliasService;
+import { systemAliasService } from '/js/services/system-alias-service.js';
 
 export class TalkgroupManager {
     constructor() {
@@ -9,17 +9,31 @@ export class TalkgroupManager {
         this.glowStates = {};
         this.callStats = {};
         this.shortNameFilter = null;
-        this.encounteredSystems = new Set();
+        this.systems = new Set();
+        this.eventHandlers = new Map();
+    }
+
+    emit(event, data) {
+        const handlers = this.eventHandlers.get(event) || [];
+        handlers.forEach(handler => handler(data));
+    }
+
+    on(event, handler) {
+        if (!this.eventHandlers.has(event)) {
+            this.eventHandlers.set(event, []);
+        }
+        this.eventHandlers.get(event).push(handler);
     }
 
     setMetadata(metadata) {
         this.metadata = metadata;
         let hasNewSystems = false;
         
-        // Add systems from metadata to encounteredSystems
+        // Add systems from metadata to systems set
         Object.values(metadata).forEach(data => {
-            if (data.shortName && !this.encounteredSystems.has(data.shortName)) {
-                this.encounteredSystems.add(data.shortName);
+            if (data.shortName && !this.systems.has(data.shortName)) {
+                this.systems.add(data.shortName);
+                this.emit('systemAdded', data.shortName);
                 hasNewSystems = true;
             }
         });
@@ -41,14 +55,34 @@ export class TalkgroupManager {
         });
     }
 
-    handleEvent(event) {
+    async handleEvent(event) {
         const talkgroup = event.talkgroupOrSource;
         const radioId = event.radioID;
         const system = event.systemShortName || event.shortName;
 
-        if (system && !this.encounteredSystems.has(system)) {
-            this.encounteredSystems.add(system);
-            window.socketIo.emit('systemsUpdated');
+        // Validate system information
+        if (!system) {
+            console.warn('Event missing system information:', event);
+            return;
+        }
+        
+        // Validate system format
+        if (!/^[a-zA-Z0-9-_]+$/.test(system)) {
+            console.error('Invalid system name format:', system);
+            return;
+        }
+        
+        try {
+            // Track system consistently and add to alias service
+            if (!this.systems.has(system)) {
+                // Add to alias service first
+                await systemAliasService.addSystem(system);
+                this.systems.add(system);
+                this.emit('systemAdded', system);
+                window.socketIo.emit('systemsUpdated');
+            }
+        } catch (error) {
+            console.error('Error handling system:', error);
         }
 
         if (!this.talkgroups[talkgroup]) {
@@ -104,13 +138,18 @@ export class TalkgroupManager {
     getTalkgroupEntries({ showActiveOnly = false, sortBy = 'id', excludedTalkgroups = new Set(), currentCategory = null, currentTag = null, showUnassociated = true }) {
         let entries = Object.entries(this.talkgroups);
         
-        // Filter by shortName if set
+        // Filter by system if set
         if (this.shortNameFilter) {
             entries = entries.filter(([talkgroup]) => {
+                const metadata = this.metadata[talkgroup];
                 const radioStates = this.radioStates[talkgroup];
-                if (!radioStates) return false;
-                return Object.values(radioStates).some(state => 
-                    state.shortName === this.shortNameFilter
+                
+                // Check both metadata and radio states
+                return (
+                    (metadata && metadata.shortName === this.shortNameFilter) ||
+                    (radioStates && Object.values(radioStates).some(
+                        state => state.shortName === this.shortNameFilter
+                    ))
                 );
             });
         }
@@ -202,14 +241,15 @@ export class TalkgroupManager {
     }
 
     async getKnownSystems() {
-        // Convert encounteredSystems to array of objects with shortName and displayName
-        const systems = Array.from(this.encounteredSystems);
+        // Convert systems to array of objects with shortName and displayName
+        const systems = Array.from(this.systems);
         const systemsWithAliases = await Promise.all(
             systems.map(async shortName => ({
                 shortName,
                 displayName: await systemAliasService.getAlias(shortName)
             }))
         );
-        return systemsWithAliases;
+        // Sort by shortName for consistent ordering
+        return systemsWithAliases.sort((a, b) => a.shortName.localeCompare(b.shortName));
     }
 }

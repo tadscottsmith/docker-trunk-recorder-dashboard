@@ -1,9 +1,12 @@
+import { systemAliasService } from '../services/system-alias-service.js';
+
 export class FilterManager {
     constructor(talkgroupManager, onFilterChange) {
         this.talkgroupManager = talkgroupManager;
         this.onFilterChange = onFilterChange;
         this.pendingExclude = null;
         this.knownSystems = new Set(); // Track known systems
+        this.systemButtons = new Map(); // Track system filter buttons
         
         // Load saved state or use defaults
         const savedState = this.loadFilterState();
@@ -15,16 +18,41 @@ export class FilterManager {
         this.currentTag = savedState.currentTag ?? null;
         this.showUnassociated = savedState.showUnassociated ?? true;
 
-        // Listen for system list updates
-        window.socketIo.on('systemsUpdated', () => {
-            this.checkAndUpdateSystems();
+        // Listen for system events from TalkgroupManager
+        this.talkgroupManager.on('systemAdded', async (system) => {
+            console.log('New system detected:', system);
+            await this.handleNewSystem(system);
         });
 
-        // Listen for talkgroups reloaded to check for new systems and update filters
+        // Listen for system list updates
+        window.socketIo.on('systemsUpdated', async () => {
+            console.log('System list update received');
+            await this.checkAndUpdateSystems();
+        });
+
+        // Listen for system alias updates
+        window.socketIo.on('systemAliasesUpdated', async () => {
+            console.log('System aliases updated, refreshing list');
+            await this.checkAndUpdateSystems();
+        });
+
+        // Listen for talkgroups reloaded
         window.socketIo.on('talkgroupsReloaded', () => {
             this.checkAndUpdateSystems();
             this.updateFilterOptions();
         });
+    }
+
+    async handleNewSystem(system) {
+        try {
+            const displayName = await systemAliasService.getAlias(system);
+            if (!this.knownSystems.has(system)) {
+                this.knownSystems.add(system);
+                await this.addSystemButton(system, displayName);
+            }
+        } catch (error) {
+            console.error('Error handling new system:', error);
+        }
     }
 
     async checkAndUpdateSystems() {
@@ -58,33 +86,91 @@ export class FilterManager {
 
     async refreshSystemList(systems) {
         try {
-            // Get and clear the system filter container
             const filterContainer = document.getElementById('systemFilter');
-            const currentActiveSystem = filterContainer.querySelector('.system-button.active')?.dataset.system;
-            filterContainer.innerHTML = '';
-            
-            // Create "All" button
-            const allButton = document.createElement('button');
-            allButton.id = 'allSystems';
-            allButton.className = `system-button${!currentActiveSystem ? ' active' : ''}`;
-            allButton.textContent = 'All';
-            filterContainer.appendChild(allButton);
-            
-            // Create buttons for known systems
-            systems.sort((a, b) => a.shortName.localeCompare(b.shortName)).forEach(system => {
-                const button = document.createElement('button');
-                button.id = `${system.shortName}Filter`;
-                button.className = `system-button${currentActiveSystem === system.shortName ? ' active' : ''}`;
-                button.dataset.system = system.shortName;
-                button.textContent = system.displayName;
-                filterContainer.appendChild(button);
-            });
+            if (!filterContainer) {
+                console.error('System filter container not found');
+                return;
+            }
 
-            // Set up click handlers
-            this.setupSystemButtonHandlers();
+            console.log('Refreshing system list with:', systems);
+
+            // Create document fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
+            // Create "All" button if it doesn't exist
+            if (!this.systemButtons.has('all')) {
+                const allButton = document.createElement('button');
+                allButton.id = 'allSystems';
+                allButton.className = 'system-button' + (!this.currentSystem ? ' active' : '');
+                allButton.textContent = 'All';
+                this.systemButtons.set('all', allButton);
+                this.setupButtonHandler(allButton, null);
+            }
+            fragment.appendChild(this.systemButtons.get('all'));
+
+            // Update existing buttons and create new ones
+            for (const system of systems) {
+                console.log('Processing system:', system);
+                if (!this.systemButtons.has(system.shortName)) {
+                    console.log('Creating new button for:', system.shortName);
+                    const button = document.createElement('button');
+                    button.id = `${system.shortName}Filter`;
+                    button.className = 'system-button' + (this.currentSystem === system.shortName ? ' active' : '');
+                    button.dataset.system = system.shortName;
+                    button.textContent = system.displayName || system.shortName;
+                    
+                    this.setupButtonHandler(button, system.shortName);
+                    this.systemButtons.set(system.shortName, button);
+                    fragment.appendChild(button);
+                } else {
+                    console.log('Updating existing button for:', system.shortName);
+                    const button = this.systemButtons.get(system.shortName);
+                    button.textContent = system.displayName || system.shortName;
+                    fragment.appendChild(button);
+                }
+            }
+
+            // Replace content
+            console.log('Updating filter container with new buttons');
+            filterContainer.innerHTML = '';
+            filterContainer.appendChild(fragment);
         } catch (error) {
             console.error('Error refreshing system list:', error);
         }
+    }
+
+    async addSystemButton(shortName, displayName, container = null) {
+        const button = document.createElement('button');
+        button.id = `${shortName}Filter`;
+        button.className = 'system-button' + (this.currentSystem === shortName ? ' active' : '');
+        button.dataset.system = shortName;
+        button.textContent = displayName;
+        
+        this.setupButtonHandler(button, shortName);
+        this.systemButtons.set(shortName, button);
+
+        if (container) {
+            container.appendChild(button);
+        } else {
+            const filterContainer = document.getElementById('systemFilter');
+            if (filterContainer) {
+                filterContainer.appendChild(button);
+            }
+        }
+    }
+
+    setupButtonHandler(button, system) {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons
+            this.systemButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            button.classList.add('active');
+            
+            this.currentSystem = system;
+            this.talkgroupManager.setShortNameFilter(system);
+            this.saveFilterState();
+            this.onFilterChange();
+        });
     }
 
     setupSystemButtonHandlers() {

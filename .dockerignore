@@ -1,0 +1,6 @@
+data/mongodb
+data/mongodb/*
+node_modules
+.git
+.env
+*.log
