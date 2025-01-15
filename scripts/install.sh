@@ -216,7 +216,7 @@ setup_environment() {
         echo -e "${GREEN}Using existing configuration${NC}"
     else
         echo -e "${YELLOW}Downloading environment configuration file...${NC}"
-        curl -O https://raw.githubusercontent.com/LumenPrima/docker-trunk-recorder-dashboard/bfa1423/.env.example
+        curl -O https://raw.githubusercontent.com/tadscottsmith/docker-trunk-recorder-dashboard/bfa1423/.env.example
         verify_command "$?" "Failed to download .env.example"
         
         mv .env.example .env
@@ -261,7 +261,7 @@ setup_environment
 
 # Step 2: Clone repository
 echo -e "${YELLOW}[2/6] Cloning repository...${NC}"
-echo -e "${YELLOW}→ From: https://github.com/LumenPrima/docker-trunk-recorder-dashboard${NC}"
+echo -e "${YELLOW}→ From: https://github.com/tadscottsmith/docker-trunk-recorder-dashboard${NC}"
 
 # Save .env if it exists
 if [ -f ".env" ]; then
@@ -270,7 +270,7 @@ if [ -f ".env" ]; then
 fi
 
 # Clone repository
-git clone -b main https://github.com/LumenPrima/docker-trunk-recorder-dashboard.git temp_clone
+git clone -b main https://github.com/tadscottsmith/docker-trunk-recorder-dashboard.git temp_clone
 verify_command "$?" "Failed to clone repository"
 
 # Move files from temp directory
